@@ -1,13 +1,20 @@
 %% 个人信息
 
+% 旧论文未提供学院信息。
+% TODO: 请人工确认该部分归属：请补充 school = {...}。
 \nwputhesissetup{
-    title = {西工大论文模板},
-    %% title 支持自动换行，如果需要手动换行，可以使用 title-line-a 和 title-line-b 分别设置两行内容
-    % title-line-a = {第一行内容},
-    % title-line-b = {第二行内容},
-    author = {航小天},
+    title = {深空地表场景的三维重建与新视角合成},
+    title-line-a = {深空地表场景的三维},
+    title-line-b = {重建与新视角合成},
+    author = {王崇宇},
     year = {2026},
-    month = {7},
+    month = {6},
     major = {计算机科学与技术},
-    advisor = {张三},
+    advisor = {戴玉超},
 }
+
+% 旧论文正文使用了 \upcite，nwputhesis 使用 biblatex。
+\providecommand{\upcite}[1]{\supercite{#1}}
+
+% 旧论文表格使用 adjustbox 控制宽度。
+\usepackage{adjustbox}

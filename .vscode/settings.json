@@ -1,44 +1,62 @@
 {
-    "latex-workshop.latex.tools": [
-        {
-            "name": "xelatex",
-            "command": "xelatex",
-            "args": [
-                "-synctex=1",
-                "-interaction=nonstopmode",
-                "-file-line-error",
-                "-shell-escape",
-                "%DOC%"
-            ]
-        },
-        {
-            "name": "biber",
-            "command": "texlua",
-            "args": [
-                "./tools/run-biber-if-needed.lua",
-                "%DOCFILE%"
-            ]
-        }
-    ],
-    "latex-workshop.latex.recipes": [
-        {
-            "name": "xelatex + biber + xelatex x 2",
-            "tools": [
-                "xelatex",
-                "biber",
-                "xelatex",
-                "xelatex"
-            ]
-        },
-        {
-            "name": "xelatex (fast)",
-            "tools": [
-                "xelatex"
-            ]
-        }
-    ],
-    "latex-workshop.latex.recipe.default": "xelatex + biber + xelatex x 2",
-    "files.associations": {
-        "*.def": "latex"
+  "latex-workshop.latex.rootFile.useSubFile": false,
+  "latex-workshop.latex.rootFile.doNotPrompt": true,
+  "latex-workshop.latex.rootFile.default": "bachelor.tex",
+  "latex-workshop.latex.build.forceRecipeUsage": true,
+  "latex-workshop.latex.recipe.default": "xelatex (fast)",
+  "latex-workshop.latex.autoBuild.run": "never",
+  "latex-workshop.view.pdf.viewer": "tab",
+  "latex-workshop.latex.outDir": "%DIR%",
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "xelatex + biber + xelatex x 2",
+      "tools": [
+        "nwpu-xelatex-absolute",
+        "nwpu-biber-absolute",
+        "nwpu-xelatex-absolute",
+        "nwpu-xelatex-absolute"
+      ]
+    },
+    {
+      "name": "xelatex (fast)",
+      "tools": [
+        "nwpu-xelatex-absolute"
+      ]
     }
+  ],
+  "latex-workshop.latex.tools": [
+    {
+      "name": "nwpu-xelatex-absolute",
+      "command": "/bin/bash",
+      "args": [
+        "-lc",
+        "cd \"%DIR%\" && PATH=/home/wangchongyu/texlive/2026/bin/x86_64-linux:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin FONTCONFIG_FILE=/home/wangchongyu/project_light/APSIPA/fonts.conf MKTEXMF=0 MKTEXTFM=0 /home/wangchongyu/texlive/2026/bin/x86_64-linux/xelatex -synctex=1 -interaction=nonstopmode -file-line-error -output-directory=\"%OUTDIR%\" \"%DOCFILE%\""
+      ]
+    },
+    {
+      "name": "nwpu-biber-absolute",
+      "command": "/bin/bash",
+      "args": [
+        "-lc",
+        "cd \"%DIR%\" && PATH=/home/wangchongyu/texlive/2026/bin/x86_64-linux:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin /home/wangchongyu/texlive/2026/bin/x86_64-linux/biber \"%DOCFILE%\""
+      ]
+    }
+  ],
+  "latex-workshop.latex.clean.fileTypes": [
+    "*.aux",
+    "*.bbl",
+    "*.bcf",
+    "*.blg",
+    "*.fdb_latexmk",
+    "*.fls",
+    "*.log",
+    "*.out",
+    "*.run.xml",
+    "*.synctex.gz",
+    "*.toc"
+  ],
+  "files.associations": {
+    "*.def": "latex"
+  },
+  "latex-workshop.latex.build.enableMagicComments": false
 }

@@ -1,61 +1,131 @@
 %% 第二章
 
-\chapter{图表示例}
-\chaptermark{图表示例}
+\chapter{相关理论与关键技术基础}
+\chaptermark{相关理论与关键技术基础}
+\section{三维重建与新视角合成基础}
+三维重建的目标是根据二维图像恢复场景中的几何结构、相机位置和外观信息。对于静态深空地表场景，如果能够从不同位置采集多张图像，则不同图像之间存在由相机投影关系决定的几何约束。通过建立图像像素、相机参数和三维点之间的对应关系，可以估计相机运动并恢复地表结构。三维重建结果可以表现为点云、网格、体素、隐式场或显式高斯等多种形式。
 
-\section{表格}
-如\autoref{tab:undergraduate-example} 所示，该表展示了两个变量的加法与乘法结果，可作为表格排版与引用的示例。
-\begin{table}[!h]
-    \caption{表格标题}
-    \label{tab:undergraduate-example}
-    \begin{tabular}{|c|c|c|c|}
-        \hline
-        $A$ & $B$ & $A+B$ & $A\times B$ \\ \hline
-        1   & 6   & 7     & 6           \\ \hline
-        2   & 7   & 9     & 14          \\ \hline
-        3   & 8   & 11    & 24          \\ \hline
-    \end{tabular}
-\end{table}
-
-\section{插图}
-测试下文章内的图片引用。如\autoref{fig:undergraduate-example} 和\autoref{fig:undergraduate-example2} 所示，
-这是两幅插图。在这其中\autoref{subfig:undergraduate-example2-subfig1} 是第一幅子图，
-\autoref{subfig:undergraduate-example2-subfig2} 是第二幅子图。
-
-\begin{figure}[htb]
-    \includegraphics[scale=0.5]{example.png}
-    \caption{这里是个普通的标题}
-    \label{fig:undergraduate-example}
-\end{figure}
-
-\begin{figure}[htb]
-    \begin{subfigure}[t]{0.49\textwidth}\centering
-        \includegraphics[scale=0.5]{example.png}
-        \caption{这是第一个子图标题}
-        \label{subfig:undergraduate-example2-subfig1}
-    \end{subfigure}
-    \hfill
-    \begin{subfigure}[t]{0.49\textwidth}\centering
-        \includegraphics[scale=0.5]{example.png}
-        \caption{这是第二个子图标题}
-        \label{subfig:undergraduate-example2-subfig2}
-    \end{subfigure}
-    \caption{这里是另一个普通的标题}
-    \label{fig:undergraduate-example2}
-\end{figure}
-
-\section{公式示例}
-这里给出正文中的公式引用示例。行内公式可写为 $E=mc^2$，独立编号公式如\autoref{eq:undergraduate-quadratic-formula} 所示，多行推导公式如\autoref{eq:undergraduate-gaussian-sum} 所示。
+在针孔相机模型中，三维点到二维图像平面的投影关系可表示为：
 
 \begin{equation}
-    x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a}
-    \label{eq:undergraduate-quadratic-formula}
+    s\begin{bmatrix}u\\v\\1\end{bmatrix}=K\begin{bmatrix}R\,|\,t\end{bmatrix}\begin{bmatrix}X\\Y\\Z\\1\end{bmatrix}
 \end{equation}
+其中，$K$为相机内参矩阵，$R$和$t$分别表示相机旋转和平移，$(X,Y,Z)$为三维点坐标，$(u,v)$为其在图像中的投影坐标。
+
+新视角合成是在已知场景表示的基础上，从训练图像中不存在的观察位置生成图像。该任务不仅要求模型恢复合理的三维几何结构，还要求能够准确描述不同视角下的颜色、遮挡和细节变化。若几何结构不准确，新视角图像中容易出现重影、拉伸、漂浮物或局部错位；若外观建模不足，则可能出现颜色偏差、纹理模糊或光照不一致。
+
+\section{SfM与COLMAP相机位姿估计}
+SfM即运动恢复结构，是一种根据多张图像同时估计相机运动和场景三维结构的方法。其基本流程包括特征点提取、特征匹配、几何验证、相机位姿估计、三角化和全局优化。COLMAP将这一流程工程化，在三维重建和新视角合成任务中常用于提供相机位姿和初始稀疏点云\upcite{ref2,ref3}。
+
+在SfM中，重投影误差是衡量相机位姿和三维点估计精度的重要依据，其基本形式为：
 
 \begin{equation}
-    \begin{aligned}
-        \sum_{i=1}^{n} i &= 1 + 2 + \cdots + n \\
-                         &= \frac{n(n+1)}{2}
-    \end{aligned}
-    \label{eq:undergraduate-gaussian-sum}
+    E_{\mathrm{reproj}}=\sum_j\sum_{i\in V_j}\left\|x_{ij}-\pi\left(K_j(R_jX_i+t_j)\right)\right\|_2^2
 \end{equation}
+Bundle Adjustment通过联合优化相机参数和三维点坐标，使整体重投影误差最小：
+
+\begin{equation}
+    \min_{\{R_j,t_j,K_j\},\{X_i\}}\sum_j\sum_{i\in V_j}\rho\left(\left\|x_{ij}-\pi\left(K_j(R_jX_i+t_j)\right)\right\|_2^2\right)
+\end{equation}
+需要注意的是，基于BA优化的SfM主要恢复相机位姿和场景稀疏点云，其结果并不直接包含完整的连续表面信息。为了获得更高质量的场景表示和新视角合成效果，通常需要在位姿估计和初始点云的基础上，进一步结合MVS等方法进行稠密重建，或利用3D Gaussian Splatting等显式可微渲染技术构建可渲染的三维场景表示。
+
+\section{3D Gaussian Splatting基本原理}
+3D Gaussian Splatting是一种基于显式三维高斯基元的场景表示与可微渲染方法。与NeRF等隐式神经表示不同，3DGS不需要沿相机光线进行大量采样，而是直接使用一组三维高斯基元表示场景中的几何结构和外观信息。每个高斯基元通常包含三维中心位置、尺度、旋转、不透明度以及颜色特征等属性。通过对这些属性进行优化，模型可以在保持较高渲染效率的同时实现高质量的新视角合成。
+
+对于第i个三维高斯，其空间中心记为$\mu_i$，协方差矩阵记为$\Sigma_i$。给定三维空间中的任意位置x，该高斯对该位置的影响可表示为：
+
+\begin{equation}
+    G_i(x)=\exp\left(-\frac{1}{2}(x-\mu_i)^T\Sigma_i^{-1}(x-\mu_i)\right)
+\end{equation}
+其中，$\mu_i$决定高斯在三维空间中的位置，$\Sigma_i$决定高斯的空间形态和覆盖范围。由于协方差矩阵需要保持半正定，3DGS通常不直接优化完整协方差矩阵，而是将其分解为旋转矩阵和尺度矩阵的形式：
+
+\begin{equation}
+    \Sigma_i=R_iS_iS_i^TR_i^T
+\end{equation}
+其中，$R_i$表示第i个高斯的旋转矩阵，$S_i$表示尺度矩阵。尺度参数控制高斯在三个主方向上的伸展程度，旋转参数控制这些主方向在三维空间中的朝向。通过这种分解方式，可以保证协方差矩阵具有合理的几何性质，同时使高斯基元能够表达各向异性的空间结构。
+
+在渲染过程中，三维高斯需要根据当前相机参数投影到二维图像平面。设当前视角下的观察变换矩阵为$W$，投影变换在局部仿射近似下的雅可比矩阵为$J$，则三维协方差矩阵经过投影后可得到二维屏幕空间协方差：
+
+\begin{equation}
+    \Sigma'_i=JW\Sigma_iW^TJ^T
+\end{equation}
+该二维协方差决定了高斯投影到图像平面后的椭圆形覆盖区域。相比将三维点简单投影为单个像素点，3DGS将每个高斯投影为具有一定空间范围的二维椭圆分布，因此能够以splatting的方式高效完成图像渲染。屏幕空间中的高斯会根据深度顺序进行排序，并按照透明度进行颜色累积。
+
+每个高斯的颜色通常由球谐函数表示，从而建模一定程度的视角相关外观变化。对于观察方向$d$，第$i$个高斯的颜色可写为：
+
+\begin{equation}
+    c_i(d)=\sum_{l=0}^{L}\sum_{m=-l}^{l}c_{i,lm}Y_{lm}(d)
+\end{equation}
+其中，$Y_{lm}(d)$表示球谐基函数，$c_{i,lm}$表示对应的球谐系数，$L$为球谐函数的阶数。球谐表示使高斯颜色能够随观察方向发生变化，因此可以在一定程度上表示非朗伯表面、视角相关亮度变化和局部高光等外观现象。
+
+在得到屏幕空间高斯分布和视角相关颜色后，3DGS采用基于透明度的前向alpha blending计算像素颜色。对于像素$p$，设覆盖该像素的高斯集合为$\mathcal{N}(p)$，并按照深度从近到远排序，则该像素的颜色可表示为：
+
+\begin{equation}
+    C(p)=\sum_{i\in\mathcal{N}(p)}T_i\alpha_i c_i
+\end{equation}
+其中，透射率$T_i$表示位于其前方的高斯累积后剩余的透射率，可写为：
+
+\begin{equation}
+    T_i=\prod_{j<i}(1-\alpha_j)
+\end{equation}
+式中，$\alpha_i$表示第$i$个高斯在该像素处的不透明度贡献，$c_i$表示该高斯在当前观察方向下的颜色。该公式表明，靠近相机且不透明度较高的高斯会对最终像素颜色产生更大影响，而后方高斯的贡献会被前方高斯逐渐遮挡。
+
+类似地，3DGS也可以通过相同的透明度累积方式渲染深度图。若$d_i$表示第$i$个高斯在当前视角下的深度，则像素$p$处的渲染深度可表示为：
+
+\begin{equation}
+    D(p)=\sum_{i\in\mathcal{N}(p)}T_i\alpha_i d_i
+\end{equation}
+深度渲染结果能够反映三维高斯场景在当前视角下的空间层次关系。需要注意的是，该深度并不一定等同于真实场景表面深度，而是由多个高斯按照透明度加权累积得到的渲染深度。
+
+综上，每个三维高斯基元可以表示为一组可优化参数：
+
+\begin{equation}
+    \theta_i=\{\mu_i,s_i,r_i,\alpha_i,sh_i\}
+\end{equation}
+其中，$\mu_i$表示高斯中心位置，$s_i$表示尺度参数，$r_i$表示旋转参数，$\alpha_i$表示不透明度，$sh_i$表示球谐颜色系数。在训练过程中，3DGS通过可微光栅化器将三维高斯渲染为图像，并将渲染图像与真实图像进行比较，利用反向传播优化上述高斯参数。
+
+基础图像重建损失通常由$\mathcal{L}_1$像素误差和结构相似性损失共同组成：
+
+\begin{equation}
+    \mathcal{L}_{\mathrm{base}}=(1-\lambda_{\mathrm{ssim}})\mathcal{L}_1+\lambda_{\mathrm{ssim}}\left(1-\mathrm{SSIM}(\hat I,I)\right)
+\end{equation}
+其中，$\hat I$表示渲染图像，$I$表示真实图像，$\lambda_{\mathrm{ssim}}$为结构相似性损失权重。$\mathcal{L}_1$损失关注像素级颜色误差，SSIM损失关注局部结构相似性，二者结合能够同时约束颜色重建和图像结构保持。
+
+3DGS的优势在于显式表示直观、训练速度较快、渲染效率较高，并能够通过可微splatting实现高质量实时新视角合成。然而，3DGS的重建效果也容易受到相机位姿、初始点云质量、视角覆盖范围和图像监督分布的影响。当输入视角不足、远区域纹理较弱或不同视角之间外观差异较大时，仅依赖基础图像重建损失可能无法充分约束三维高斯的空间分布，容易出现局部结构不稳定、远区域细节弱化、漂浮伪影或颜色不一致等问题。因此，在复杂深空地表场景中，有必要在基础3DGS框架上进一步引入远区域增强、几何形态约束和外观一致性建模等改进策略。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{3dgs_pipeline.png}
+    \caption{3D Gaussian Splatting基本流程示意图}\label{fig:2-1}
+\end{figure}
+\section{单目深度估计辅助工具}
+单目深度估计是根据单张RGB图像预测场景深度分布的技术。本文使用Metric3Dv2-Large作为辅助工具，用于提供相对稳定的深度参考\upcite{ref30}。本文不将单目深度估计模型作为核心研究对象，也不展开其网络结构细节。其作用主要是辅助筛选图像中的远区域，为FAME模块构造远区域mask。本文不将单目深度估计结果作为三维几何真值，也不以深度误差作为主要评价指标，而是将其作为远区域划分的辅助依据。
+
+\section{图像质量评价指标}
+新视角合成质量通常通过渲染图像与真实图像之间的差异进行评价。本文采用PSNR、SSIM和LPIPS作为主要评价指标，从像素误差、结构相似性和感知质量三个角度衡量不同方法的新视角合成效果。
+
+PSNR根据均方误差计算，常用于评价渲染图像与真实图像之间的像素级重建误差：
+
+\begin{equation}
+    \mathrm{PSNR}=10\log_{10}\frac{\mathrm{MAX}_I^2}{\mathrm{MSE}},\quad \mathrm{MSE}=\frac{1}{HW}\sum_{u,v}\left(\hat I(u,v)-I(u,v)\right)^2
+\end{equation}
+其中，$\mathrm{MAX}_I$表示图像像素最大取值，$\mathrm{MSE}$表示渲染图像与真实图像之间的均方误差。PSNR数值越高，说明像素级重建误差越小。
+
+SSIM从亮度、对比度和结构三个方面度量图像相似性\upcite{ref28}：
+
+\begin{equation}
+    \mathrm{SSIM}(x,y)=\frac{(2\mu_x\mu_y+C_1)(2\sigma_{xy}+C_2)}{(\mu_x^2+\mu_y^2+C_1)(\sigma_x^2+\sigma_y^2+C_2)}
+\end{equation}
+其中，$\mu_x$和$\mu_y$表示图像局部均值，$\sigma_x$和$\sigma_y$表示局部方差，$\sigma_{xy}$表示协方差。SSIM数值越高，说明渲染图像与真实图像在局部结构上越接近。
+
+LPIPS基于深度特征空间中的距离衡量感知差异\upcite{ref29}：
+
+\begin{equation}
+    \mathrm{LPIPS}(x,y)=\sum_l\frac{1}{H_lW_l}\sum_{h,w}\left\|w_l\odot\left(\hat y_{hw}^{\,l}-\hat x_{hw}^{\,l}\right)\right\|_2^2
+\end{equation}
+其中，$\hat x_{hw}^l$和$\hat y_{hw}^l$表示图像在第$l$层深度特征空间中的归一化特征，$w_l$表示该层特征权重。LPIPS数值越低，说明两幅图像在感知特征上越接近。
+
+除整体图像质量评价外，本文还针对远区域单独统计PSNR、SSIM和LPIPS。远区域由辅助深度结果生成的mask确定，评价时仅在远区域像素范围内计算图像质量指标。该设置能够更直接地反映模型对远处地表纹理、目标边缘和背景层次的恢复能力，避免整体图像指标掩盖远区域细节变化。
+
+\section{本章小结}
+本章介绍了三维重建与新视角合成的基本概念，说明了SfM与COLMAP在相机位姿估计和初始点云生成中的作用，重点分析了3D Gaussian Splatting的场景表示、渲染和优化流程。同时，本章简要说明了单目深度估计辅助工具在本文中的作用，并介绍了后续实验采用的PSNR、SSIM和LPIPS等图像质量评价指标。
