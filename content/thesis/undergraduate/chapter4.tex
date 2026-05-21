@@ -30,29 +30,87 @@ DSS-GS的整体框架如图4-1所示。方法输入包括多视角训练图像�
 
 其中，$\hat I$表示训练视角下的渲染图像，$I$表示对应真实图像，$\lambda_{\mathrm{ssim}}$为结构相似性项权重。DSS-GS以该基础损失保证整体图像重建质量，并在其上叠加远区域增强损失、尺度形态稳定损失以及可选的外观一致性正则。后续各节将分别给出FAME、RVS和外观一致性建模的具体形式，最后汇总完整训练目标与实现流程。
 
+
 \section{FAME远区域增强模块}
 
-第三章指出，深空场景中的极端深度跨度会使远区域在全图光度损失中受到的有效监督不足。为缓解这一问题，本文设计FAME（Far-region Adaptive Mask Enhancement）远区域增强模块。该模块的核心思想是先根据辅助深度结果自适应确定每个视角中的相对远区域，再对该区域单独计算重建误差，使远处结构在训练过程中获得更强监督信号。
+第三章指出，深空场景中的极端深度跨度会使远区域在全图光度损失中受到的有效监督不足。为缓解这一问题，本文设计FAME（Far-region Adaptive Mask Enhancement）远区域增强模块。该模块的核心思想是根据辅助深度结果自适应确定每个训练视角中的相对远区域，并在原有全图重建损失基础上额外引入远区域重建损失，使远处结构在训练过程中获得更明确的监督信号。
 
-FAME不依赖固定绝对深度阈值。不同深空场景在尺度、相机距离和深度范围上差异较大，如果使用统一的固定深度值划分远区域，可能导致某些场景中远区域范围过小，而另一些场景中大量中近区域被误划为远区域。为增强跨场景适应性，本文采用深度分位数策略构造远区域\textnormal{mask}。给定某一训练视角的辅助深度图$D$，首先筛选有效深度像素集合$D_{\mathrm{valid}}$，再根据远区域比例$r_{\mathrm{far}}$确定深度阈值，最终得到远区域\textnormal{mask}：
+FAME不依赖固定绝对深度阈值。不同深空场景在尺度、相机距离和深度范围上差异较大，如果使用统一的固定深度值划分远区域，可能导致某些场景中远区域范围过小，而另一些场景中大量中近区域被误划为远区域。为增强跨场景适应性，本文采用深度分位数策略构造远区域mask。给定某一训练视角的辅助深度图$D$，首先筛选有效深度像素集合$D_{\mathrm{valid}}$，并按深度值从小到大排序：
 
 \begin{equation}
-    M_{\mathrm{far}}(u,v)=\mathbf{1}\left(D(u,v)\ge Q_{1-r_{\mathrm{far}}}(D_{\mathrm{valid}})\right)
+    D_{\mathrm{valid}}^{\uparrow}=\{d_{(1)},d_{(2)},\ldots,d_{(n)}\},\quad d_{(1)}\le d_{(2)}\le\cdots\le d_{(n)}
 \end{equation}
 
-其中，$Q_{1-r_{\mathrm{far}}}$表示有效深度集合的$1-r_{\mathrm{far}}$分位数，$M_{\mathrm{far}}(u,v)=1$表示像素$(u,v)$被划分为远区域。该策略只利用辅助深度的相对排序信息，不将单目深度结果作为真实几何监督，因此能够降低单目深度绝对尺度误差对训练目标的影响。
+其中，$n$表示该视角中有效深度像素数量。在本文使用的辅助深度图中，深度值越大表示像素位置相对越远。给定远区域比例$r_{\mathrm{far}}$后，本文选取有效深度集合的$1-r_{\mathrm{far}}$分位数作为远区域阈值：
+\begin{equation}
+    k=\left\lceil(1-r_{\mathrm{far}})n\right\rceil,\quad
+    \tau_{\mathrm{far}}=d_{(k)}=Q_{1-r_{\mathrm{far}}}(D_{\mathrm{valid}})
+\end{equation}
 
-\begin{quote}
-\textbf{配图提示：}此处应放FAME远区域划分示意图，建议包含原始图像、辅助深度图、远区域\textnormal{mask}以及被增强监督的远区域叠加图。
-\end{quote}
+最终，远区域mask定义为：
+\begin{equation}
+    M_{\mathrm{far}}(u,v)=\mathbf{1}\left(D(u,v)\ge \tau_{\mathrm{far}}\right)
+\end{equation}
 
-在得到远区域\textnormal{mask}后，FAME对远区域内渲染图像与真实图像之间的颜色误差进行单独计算。远区域增强损失定义为：
+其中，$M_{\mathrm{far}}(u,v)=1$表示像素$(u,v)$被划分为远区域。
+
+$r_{\mathrm{far}}$是控制远区域增强覆盖范围的关键超参数。当取值过小时，参与增强的远区域像素数量不足，FAME难以提供稳定的远处结构监督；当取值过大时，较多中近区域也会被纳入远区域增强范围，可能削弱模块针对远区域监督不足问题的专门性。为了系统确定合理取值，本文从数据集中在固定随机种子下选取10个场景，并设置$r_{\mathrm{far}}$为0.05、0.10、0.15、……、0.50共10个候选值。每个场景分别使用10个候选值完成训练、渲染和评价，共得到100组结果。为避免不同场景之间难度差异对结论造成干扰，本文在每个场景内部对10个$r_{\mathrm{far}}$结果进行归一化后再统计，从而更准确地反映远区域比例本身带来的性能变化。
+
+综合评价同时考虑远区域渲染质量、全图渲染质量以及重投影误差。其中，远区域指标用于判断增强目标是否真正改善，全图指标用于约束最终新视角合成质量，重投影误差用于约束不同候选比例下的几何一致性，避免只提升图像指标而导致投影关系退化。不同远区域比例下的归一化综合评分结果如图\ref{fig:4-ratio-score}所示，关键候选值的综合得分见表\ref{tab:4-ratio-score}。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\textwidth]{不同远景区域比例下的归一化综合得分.png}
+    \caption{不同远区域比例下的归一化综合评分}\label{fig:4-ratio-score}
+\end{figure}
+
+\begin{table}[H]
+    \fontsize{10.5pt}{13.125pt}\selectfont
+    \caption{不同远区域比例的关键综合得分}
+    \centering\label{tab:4-ratio-score}
+    \begin{adjustbox}{max width=\textwidth}
+    \begin{tabular}{ccccc}
+        \toprule
+        ratio & far score & global score & reproj score & weighted score \\
+        \midrule
+        0.20 & 0.3208 & 0.0764 & -0.3554 & 0.1583 \\
+        0.25 & 0.2943 & 0.2383 & -0.2097 & 0.2047 \\
+        0.30 & 0.3392 & 0.3539 & -0.0723 & 0.2811 \\
+        0.35 & 0.2259 & 0.5003 & 0.0161 & 0.2631 \\
+        0.40 & 0.0587 & 0.5957 & 0.4766 & 0.2556 \\
+        0.45 & -0.0072 & 0.8400 & 0.2286 & 0.2400 \\
+        0.50 & -0.0242 & 0.8803 & 0.3904 & 0.2641 \\
+        \bottomrule
+    \end{tabular}
+    \end{adjustbox}
+\end{table}
+
+由图\ref{fig:4-ratio-score}和表\ref{tab:4-ratio-score}可知，$r_{\mathrm{far}}$=0.30取得最高的weighted score，其值为0.2811，说明该比例在多指标综合评价下表现最好。相比0.20和0.25，0.30在保持较高far score的同时，全图渲染质量进一步提升；相比0.35、0.40、0.45和0.50等更大比例，0.30的远区域得分更高，说明其远区域划分更加集中，增强目标更加明确，没有因为远区域范围过宽而削弱FAME的有效性。
+
+从场景稳定性角度看，不同场景对$r_{\mathrm{far}}$的敏感程度并不完全一致，因此还需要观察该比例是否只依赖个别场景取得优势。图\ref{fig:4-ratio-stability}展示了不同远区域比例在多场景归一化评价中的排名稳定性。可以看到，中等比例区间整体表现更稳定，其中0.30位于远区域增强效果较好的范围内，同时没有出现明显的跨场景退化现象，说明该取值具有较好的跨场景适应性和鲁棒性。综上，本文最终选择$r_{\mathrm{far}}$=0.30作为远区域划分比例。该取值并非人为指定的经验常数，而是在候选比例实验中综合远区域质量、全图质量和重投影误差后确定的默认设置。
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{不同远景区域比例的跨场景排名稳定性_a.png}
+        \caption{Top-3频次}
+    \end{subfigure}\hfill
+    \begin{subfigure}[t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{不同远景区域比例的跨场景排名稳定性_b.png}
+        \caption{平均排名}
+    \end{subfigure}
+    \caption{不同远区域比例的跨场景排名稳定性}\label{fig:4-ratio-stability}
+\end{figure}
+
+在得到远区域mask后，FAME对远区域内渲染图像与真实图像之间的颜色误差进行单独计算。远区域增强损失定义为：
 
 \begin{equation}
     \mathcal{L}_{\mathrm{FAME}}=\frac{\left\|M_{\mathrm{far}}\odot(\hat I-I)\right\|_1}{3\sum_{u,v}M_{\mathrm{far}}(u,v)+\epsilon}
 \end{equation}
 
-式中，$\odot$表示逐像素乘法，$\epsilon$为防止分母为零的稳定项，分母中的系数3对应RGB三个颜色通道。该损失只在远区域\textnormal{mask}覆盖范围内计算平均颜色误差，使远区域像素不再只是全图损失中的一小部分，而是作为独立监督项参与优化。
+式中，$\odot$表示逐像素乘法，$\epsilon$为防止分母为零的稳定项，分母中的系数3对应RGB三个颜色通道。该损失只在远区域mask覆盖范围内计算平均颜色误差，使远区域像素不再只是全图损失中的一小部分，而是作为独立监督项参与优化。
 
 加入FAME后的训练目标可写为：
 
@@ -60,9 +118,7 @@ FAME不依赖固定绝对深度阈值。不同深空场景在尺度、相机距�
     \mathcal{L}=\mathcal{L}_{\mathrm{base}}+\lambda_{\mathrm{fame}}\mathcal{L}_{\mathrm{FAME}}
 \end{equation}
 
-其中，$\lambda_{\mathrm{fame}}$为远区域增强损失权重。该权重用于控制远区域监督与基础全图重建监督之间的平衡。若权重过低，远区域增强作用不明显；若权重过高，则可能使模型过度关注远区域而影响整体图像质量。因此，本文在实验设置中采用统一默认参数，并在第五章中通过消融实验分析其作用。
-
-FAME的优势在于实现方式直接且与原始3DGS框架兼容。它不改变高斯基元参数化方式，也不改变可微渲染器结构，只是在训练阶段引入由辅助深度生成的远区域监督项。由此，模型仍能保持3DGS快速训练和实时渲染的特点，同时对深空场景中容易被忽略的远区域结构形成更强约束。
+其中，$\lambda_{\mathrm{fame}}$为远区域增强损失权重，用于控制远区域监督与基础全图重建监督之间的平衡。FAME的优势在于实现方式直接且与原始3DGS框架兼容。它不改变高斯基元参数化方式，也不改变可微渲染器结构，只是在训练阶段引入由辅助深度生成的远区域监督项。由此，模型仍能保持3DGS快速训练和实时渲染的特点，同时对深空场景中容易被忽略的远区域结构形成更强约束。
 
 \section{RVS高斯形态与尺度稳定模块}
 
@@ -181,7 +237,7 @@ FAME和RVS是本文面向深空场景的主要方法模块，分别对应远区�
 \begin{table}[H]
     \fontsize{10.5pt}{13.125pt}\selectfont
     \caption{DSS-GS各模块的作用对象与训练目标}
-    \centering\label{tab:4-1}
+    \centering\label{tab:4-modules}
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{ccccc}
         \toprule
@@ -195,7 +251,7 @@ FAME和RVS是本文面向深空场景的主要方法模块，分别对应远区�
     \end{adjustbox}
 \end{table}
 
-表4-1总结了DSS-GS中各模块的作用对象和训练目标。可以看到，FAME和RVS分别对应图像监督增强和高斯表示稳定，是本文方法的核心组成部分；外观一致性建模主要用于复杂光照条件下的辅助分析。训练完成后，模型保留优化后的三维高斯参数，并在测试视角下进行新视角渲染。由于DSS-GS没有改变3DGS的基本渲染方式，因此仍能利用显式高斯表示的快速渲染优势。
+表\ref{tab:4-modules}总结了DSS-GS中各模块的作用对象和训练目标。可以看到，FAME和RVS分别对应图像监督增强和高斯表示稳定，是本文方法的核心组成部分；外观一致性建模主要用于复杂光照条件下的辅助分析。训练完成后，模型保留优化后的三维高斯参数，并在测试视角下进行新视角渲染。由于DSS-GS没有改变3DGS的基本渲染方式，因此仍能利用显式高斯表示的快速渲染优势。
 
 \begin{quote}
 \textbf{配图提示：}此处应放DSS-GS训练流程示意图或伪代码图，展示初始化、远区域\textnormal{mask}准备、FAME损失计算、RVS正则计算、可选外观分支以及测试视角渲染流程。
