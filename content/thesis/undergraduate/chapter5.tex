@@ -271,33 +271,114 @@
 \section{光照扰动条件下的外观一致性分析}
 光照扰动实验用于分析模型在复杂外观条件下的新视角合成鲁棒性。实验在保持场景几何、相机位姿和训练测试划分不变的前提下，对训练图像构造低光、过曝、白平衡偏移和局部亮度变化等扰动，从而模拟深空场景中可能出现的非均匀光照和成像差异。需要说明的是，光照扰动实验与常规新视角合成实验的关注重点不同。常规实验主要评价模型在原始数据条件下的整体重建质量，而光照扰动实验更关注模型在训练图像存在亮度、曝光和颜色差异时的外观适应能力。若将二者混合分析，容易将几何重建误差和外观变化误差混在一起，导致实验结论不够清晰。因此，本文在保持场景几何结构、相机位姿和测试视角划分不变的前提下，单独构造光照扰动数据，用于观察不同方法在非一致外观条件下的鲁棒性。
 
-在该实验设置下，如果模型缺少有效的外观建模能力，就可能将不同视角之间的亮度变化错误解释为场景颜色或局部结构变化，进而导致渲染结果出现颜色偏移、局部发灰、纹理不稳定等现象。对于深空场景而言，太阳高度角、阴影范围、曝光状态和成像响应差异都可能造成类似问题。因此，光照扰动实验不仅用于验证本文外观建模分支的有效性，也用于说明深空场景中新视角合成任务并不只是几何重建问题，还需要同时考虑跨视角外观一致性。表5-5给出了不同方法在光照扰动条件下的新视角合成质量对比。
+在该实验设置下，如果模型缺少有效的外观建模能力，就可能将不同视角之间的亮度变化错误解释为场景颜色或局部结构变化，进而导致渲染结果出现颜色偏移、局部发灰、纹理不稳定等现象。对于深空场景而言，太阳高度角、阴影范围、曝光状态和成像响应差异都可能造成类似问题。因此，本文选取Luminance-GS、WildGaussians与本文方法进行对比，从整体指标、实际渲染结果和亮度分布三个层面分析不同外观建模方法在光照扰动条件下的表现。表5-5给出了对应的定量结果。
 
 \begin{table}[H]
     \fontsize{10.5pt}{13.125pt}\selectfont
-    \caption{光照扰动条件下的新视角合成质量对比}
+    \caption{光照扰动条件下不同外观建模方法的新视角合成质量对比}
     \centering\label{tab:5-5}
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{cccc}
         \toprule
         Method & SSIM$\uparrow$ & PSNR$\uparrow$ & LPIPS$\downarrow$ \\
         \midrule
-        3D Gaussian Splatting (ACM TOG’23) & 0.936 & 29.76 & 0.100 \\
         Luminance-GS (CVPR’25) & 0.873 & 20.32 & 0.198 \\
-        Wildgaussians (NeurIPS’24) & 0.768 & 23.38 & 0.282 \\
+        WildGaussians (NeurIPS’24) & 0.768 & 23.38 & 0.282 \\
         \textbf{Ours} & \textbf{0.942} & \textbf{33.48} & \textbf{0.100} \\
         \bottomrule
     \end{tabular}
     \end{adjustbox}
 \end{table}
-由表5-5可知，在光照扰动条件下，本文方法在SSIM和PSNR上均取得最优结果，LPIPS与3DGS持平并优于其他外观建模方法。该结果说明本文外观建模设计能够在一定程度上缓解光照变化带来的颜色偏差和曝光不一致问题，使新视角渲染结果在结构保持和像素重建方面更加稳定。
+由表5-5可知，在三种外观建模方法中，本文方法的SSIM、PSNR和LPIPS均取得最优结果。Luminance-GS的SSIM和LPIPS优于WildGaussians，但PSNR较低；WildGaussians在PSNR上高于Luminance-GS，而结构相似性与感知质量指标仍存在差距。该结果表明，光照扰动条件下的外观建模不仅需要调整整体亮度，还需要同时保持场景结构和局部纹理的稳定性。
+
+定量指标反映了整体重建误差，但不同方法是否在具体场景中出现亮度偏移、颜色失衡或局部纹理异常，还需要结合渲染图像与亮度分布进一步观察。为此，图\ref{fig:5-6}给出三个典型场景的可视化对比，图\ref{fig:5-appearance-luminance}进一步给出相同场景下的亮度分布曲线。
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.82\textwidth]{外观一致性可视化结果.jpg}
-    \caption{光照扰动条件下的新视角合成可视化对比}\label{fig:5-6}
+    \setlength{\tabcolsep}{1.5pt}
+    \renewcommand{\arraystretch}{1.0}
+    \begin{tabular}{>{\centering\arraybackslash}m{0.045\textwidth}cccc}
+        & \textbf{GT} & \textbf{Luminance-GS} & \textbf{WildGaussians} & \textbf{Ours} \\
+        1 &
+        \includegraphics[width=0.21\textwidth]{413_GT.png} &
+        \includegraphics[width=0.21\textwidth]{413_Lu.png} &
+        \includegraphics[width=0.21\textwidth]{413_120_1_wg.png} &
+        \includegraphics[width=0.21\textwidth]{413_ours.png} \\
+        2 &
+        \includegraphics[width=0.21\textwidth]{434_GT.png} &
+        \includegraphics[width=0.21\textwidth]{434_Lu.png} &
+        \includegraphics[width=0.21\textwidth]{434_43_1_wg.png} &
+        \includegraphics[width=0.21\textwidth]{434_ours.png} \\
+        3 &
+        \includegraphics[width=0.21\textwidth]{455_GT.png} &
+        \includegraphics[width=0.21\textwidth]{455_Lu.png} &
+        \includegraphics[width=0.21\textwidth]{455_4_2_wg.png} &
+        \includegraphics[width=0.21\textwidth]{455_ours.png}
+    \end{tabular}
+    \caption{光照扰动条件下不同外观建模方法的新视角合成可视化对比。自上而下三行分别对应场景1、场景2和场景3。}\label{fig:5-6}
 \end{figure}
-从图\ref{fig:5-6}可以看出，在复杂光照扰动条件下，开启外观一致性模块后的结果整体上更接近GT。第一行主要包含弱纹理区域和大范围明暗渐变区域，未开启外观一致性模块时，图像右侧暗部区域的色调偏移更加明显，场景纹理对比度也与GT存在差异；开启该模块后，整体亮度分布和暗部过渡更加稳定。第二行包含起伏结构、碎石和局部阴影区域，未开启模块时，碎石边缘和阴影附近容易出现颜色不均衡现象，而开启模块后，岩石区域的亮度层次和场景颜色更接近真实图像。第三行包含较多小尺度石块和局部颗粒结构，未开启模块时局部色调略有漂移，前景区域的亮暗关系不够自然；开启模块后，场景颜色、阴影边界以及小石块周围的外观变化更加连续。总体而言，外观一致性模块能够在低光、过曝、白平衡偏移和局部亮度变化等扰动下，提升模型对颜色分布和局部外观变化的表达能力，从而增强新视角合成结果的视觉一致性。
+
+\newcommand{\appearanceLuminancePlot}[4]{%
+    \begin{tikzpicture}[x=0.031cm,y=175cm,font=\scriptsize]
+        \foreach \x in {64,128,192,255}{
+            \draw[gray!25,densely dotted] (\x,0) -- (\x,0.024);
+        }
+        \foreach \y in {0.01,0.02}{
+            \draw[gray!25,densely dotted] (0,\y) -- (255,\y);
+        }
+        \draw[->] (0,0) -- (262,0) node[below right] {亮度值};
+        \draw[->] (0,0) -- (0,0.025) node[above left] {归一化频率};
+        \foreach \x in {0,64,128,192,255}{
+            \draw (\x,0) -- (\x,-0.00055) node[below] {\x};
+        }
+        \foreach \y/\ylabel in {0/0,0.01/0.01,0.02/0.02}{
+            \draw (0,\y) -- (-3,\y) node[left] {\ylabel};
+        }
+        \draw[blue!70!black,line width=0.8pt] plot file {#1};
+        \draw[yellow!55!red,line width=0.8pt] plot file {#2};
+        \draw[green!50!black,line width=0.8pt] plot file {#3};
+        \draw[red!70!black,line width=0.8pt] plot file {#4};
+    \end{tikzpicture}%
+}
+
+\begin{figure}[H]
+    \centering
+    \begin{tikzpicture}[font=\scriptsize]
+        \draw[blue!70!black,line width=0.8pt] (0,0) -- (0.55,0);
+        \node[anchor=west] at (0.65,0) {GT};
+        \draw[yellow!55!red,line width=0.8pt] (1.75,0) -- (2.30,0);
+        \node[anchor=west] at (2.40,0) {Luminance-GS};
+        \draw[green!50!black,line width=0.8pt] (4.60,0) -- (5.15,0);
+        \node[anchor=west] at (5.25,0) {WildGaussians};
+        \draw[red!70!black,line width=0.8pt] (7.65,0) -- (8.20,0);
+        \node[anchor=west] at (8.30,0) {Ours};
+    \end{tikzpicture}
+
+    \begin{subfigure}[t]{0.96\textwidth}
+        \centering
+        \appearanceLuminancePlot{content/figures/luminance_413_gt.dat}{content/figures/luminance_413_lu.dat}{content/figures/luminance_413_wg.dat}{content/figures/luminance_413_ours.dat}
+        \caption{场景1}
+    \end{subfigure}\\[-0.2\baselineskip]
+    \begin{subfigure}[t]{0.96\textwidth}
+        \centering
+        \appearanceLuminancePlot{content/figures/luminance_434_gt.dat}{content/figures/luminance_434_lu.dat}{content/figures/luminance_434_wg.dat}{content/figures/luminance_434_ours.dat}
+        \caption{场景2}
+    \end{subfigure}\\[-0.2\baselineskip]
+    \begin{subfigure}[t]{0.96\textwidth}
+        \centering
+        \appearanceLuminancePlot{content/figures/luminance_455_gt.dat}{content/figures/luminance_455_lu.dat}{content/figures/luminance_455_wg.dat}{content/figures/luminance_455_ours.dat}
+        \caption{场景3}
+    \end{subfigure}
+    \caption{三个场景的亮度分布对比。横轴为亮度值，纵轴为归一化频率；每张子图对应一个场景，曲线比较GT、Luminance-GS、WildGaussians和Ours。}\label{fig:5-appearance-luminance}
+\end{figure}
+
+结合图\ref{fig:5-6}和图\ref{fig:5-appearance-luminance}可以看到，不同场景中的外观偏差并不完全相同。场景1包含明显的明暗渐变和密集碎石纹理。Luminance-GS结果整体偏亮，左侧高亮区域的黄色增强更明显，其亮度分布相对GT向高亮侧移动；WildGaussians的亮度主峰位置与GT接近，但图像上方出现较明显的平滑和结构异常，说明仅观察整体亮度接近并不足以保证局部外观可靠。本文方法在该场景中没有出现WildGaussians的上边界异常，碎石纹理和由左向右的亮度过渡保持得更连续，亮度曲线也主要分布在GT主峰附近。
+
+场景2以大面积细颗粒地表为主，GT中的纹理起伏较均匀，因而亮度分布主峰相对集中。Luminance-GS在整幅图中表现出更强的高亮黄色，亮度曲线的主体向右偏移并变宽；WildGaussians在上方区域存在明显平滑和边界扰动，其亮度分布相对GT落在较暗一侧。相比之下，本文方法在该场景中的颗粒纹理、整体亮度和主峰位置均更接近GT，曲线与GT在主要亮度区间内的重合程度更高。
+
+场景3同时包含左侧高亮地表、右侧较暗区域以及不同尺度的岩石结构。Luminance-GS进一步抬高了高亮区域的亮度，曲线整体向高亮侧偏移；WildGaussians在图像上部仍有明显形变和平滑现象，曲线主峰相对GT偏向较低亮度。本文方法保留了该场景由左向右的亮度变化和岩石附近的局部层次，其亮度分布与GT的主体区间更接近，能够与可视化结果中更稳定的纹理过渡相互对应。
+
+综合表\ref{tab:5-5}、可视化结果和亮度分布曲线可以看出，在所比较的三种外观建模方法中，本文方法不仅在定量指标上取得更优结果，也在三个场景中表现出更稳定的亮度分布和局部外观保持能力。Luminance-GS在这些场景中更容易出现整体偏亮的趋势，WildGaussians则在部分区域出现边界平滑或结构扰动；本文方法在控制亮度偏移的同时更好地保留了地表纹理与明暗过渡，因此更适合光照扰动条件下的深空场景新视角合成。
 
 \section{消融实验分析}
 消融实验用于分析本文不同模块对新视角合成质量的贡献。实验以3DGS为基线，分别加入有效秩正则、体积正则、RVS、FAME以及FAME与RVS的组合，比较不同配置下的PSNR、SSIM和LPIPS指标变化。其中，RVS表示有效秩正则与体积正则的联合设置，主要用于约束高斯基元的尺度分布和整体体积变化；FAME主要作用于远区域图像重建监督。二者分别从高斯形态稳定性和远区域监督增强两个角度对3DGS进行补充。为展示各组件是否启用对指标的影响，表5-6以勾选形式列出了有效秩正则、体积正则、RVS和FAME的组合关系及对应的新视角合成质量。
