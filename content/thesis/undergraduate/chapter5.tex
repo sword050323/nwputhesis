@@ -71,42 +71,133 @@
 
 相比上述方法，本文方法的优势在于其改进目标与深空场景的主要退化来源更加一致。FAME直接增强远区域图像监督，RVS约束高斯形态和空间覆盖稳定性，外观一致性建模用于缓解跨视角颜色与光照差异。三者分别对应远区域监督不足、显式高斯表示不稳定和外观变化问题，因此能够在MVGS较强结果的基础上继续提升整体指标，并取得表5-2中的最佳综合表现。
 
-为进一步分析本文方法在不同难度场景下的稳定性，本文根据基础3DGS在各场景上的PSNR指标对全部测试场景进行排序，并按照排序结果划分为困难组、常规组和简单组。其中，PSNR较低的前15\%场景划分为困难组，PSNR较高的后15\%场景划分为简单组，中间70\%场景划分为常规组。该划分方式以基础3DGS的重建结果作为难度依据，能够反映不同场景在原始高斯表示下的重建难易程度。通常情况下，困难组场景更可能包含远区域欠拟合、弱纹理、视角约束不足等问题；简单组场景则表示基础3DGS已经能够取得较好重建效果的场景。
-
-表5-3给出了不同难度场景下本文方法相对3DGS的性能提升结果。为避免仅通过全体场景平均值掩盖不同难度场景中的性能差异，本文分别统计了各难度组中3DGS与Ours的PSNR、SSIM和LPIPS平均值，并计算二者之间的变化量。
-
-\begin{table}[H]
-    \fontsize{10.5pt}{13.125pt}\selectfont
-    \caption{不同难度场景下本文方法相对3DGS的性能提升对比}
-    \centering\label{tab:5-3}
-    \begin{adjustbox}{max width=\textwidth}
-    \begin{tabular}{ccccccccccc}
-        \toprule
-        难度分组 & 场景数量 & 3DGS PSNR & Ours PSNR & $\Delta$PSNR & 3DGS SSIM & Ours SSIM & $\Delta$SSIM & 3DGS LPIPS & Ours LPIPS & $\Delta$LPIPS \\
-        \midrule
-        困难组 & 62 & 27.62 & 33.81 & 5.70 & 0.786 & 0.896 & 0.088 & 0.355 & 0.200 & 0.134 \\
-        常规组 & 292 & 36.99 & 38.87 & 1.60 & 0.951 & 0.971 & 0.015 & 0.101 & 0.061 & 0.035 \\
-        简单组 & 62 & 40.90 & 41.33 & 0.36 & 0.980 & 0.982 & 0.002 & 0.046 & 0.036 & 0.007 \\
-        全部场景 & 416 & 36.17 & 38.49 & 2.31 & 0.931 & 0.961 & 0.030 & 0.131 & 0.078 & 0.053 \\
-        \bottomrule
-    \end{tabular}
-    \end{adjustbox}
-\end{table}
-由表5-3可以看出，本文方法在不同难度场景下均优于基础3DGS，且在困难组中的提升最为明显。在困难组中，Ours的PSNR由3DGS的27.62dB提升至33.81dB，提升5.70dB；SSIM由0.786提升至0.896，提升0.088；LPIPS由0.355降低至0.200，降低0.134。该结果说明，在基础3DGS难以充分重建的场景中，本文方法能够更有效地改善图像重建质量和感知质量。
-
-在常规组中，本文方法同样保持稳定提升，PSNR提升1.60dB，SSIM提升0.015，LPIPS降低0.035。这说明本文方法并非仅对少数困难样本有效，而是在占比较高的常规场景中也能够持续改善新视角合成结果。对于简单组，基础3DGS已经取得较高指标，PSNR达到40.90dB，SSIM达到0.980，LPIPS仅为0.046，因此进一步提升空间相对有限。在这种情况下，本文方法仍将PSNR提升至41.33dB，并将LPIPS降低至0.036，说明本文方法在简单场景中没有破坏原有较好的重建结果，而是仍然能够带来小幅稳定增益。
-
-综合不同难度组结果可以发现，本文方法的提升幅度与场景难度具有一定相关性：场景越困难，本文方法相对3DGS的提升越明显。这一现象与本文的设计目标一致。困难场景中往往存在远区域纹理弱、局部结构尺度变化大、视角约束不足或外观变化明显等问题，基础3DGS仅依赖全图重建损失时容易出现远处细节弱化、局部结构模糊或空间表达不稳定现象。本文通过远区域增强约束提高远处区域在训练过程中的影响，同时通过高斯形态稳定约束缓解尺度退化和异常拉伸问题，从而在基础方法表现较弱的场景中取得更明显的改进。该结果进一步说明，本文方法不仅能够提升整体平均指标，而且能够重点改善深空场景中更具挑战性的重建情况。
+为了进一步从视觉效果上验证上述定量结果，图\ref{fig:5-1}给出了不同方法在典型深空测试视角下的新视角合成可视化对比。
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.78\textwidth]{深空场景新视角合成可视化对比.jpg}
     \caption{深空场景新视角合成可视化对比}\label{fig:5-1}
 \end{figure}
-从图5-1可视化结果也可以看出，3DGS在远处区域和弱纹理区域容易出现局部模糊、纹理连续性不足和小尺度结构弱化等现象；相比之下，本文方法在局部颗粒、目标边缘和远处背景层次上保持更加清晰，渲染结果与真实图像更接近。该可视化结果与表5-3中PSNR、SSIM和LPIPS的提升趋势一致，说明本文方法不仅改善了整体图像指标，也提升了深空场景中容易退化区域的视觉质量。
+从图\ref{fig:5-1}可以看到，3DGS等方法在远区域、弱纹理区域或局部边缘处仍存在模糊和细节弱化；相比之下，本文方法在纹理清晰度、边缘稳定性和整体视觉一致性上更接近GT，这与表5-2的指标趋势一致。
+
+上述结果反映了不同方法在全部测试场景上的平均表现。为进一步分析本文方法在不同重建难度场景下的稳定性，下面根据基础3DGS在各场景上的PSNR表现对测试场景进行分组分析。
+
+具体地，本文按基础3DGS在各场景上的PSNR由低到高排序，将前15\%划分为困难组，中间70\%划分为常规组，后15\%划分为简单组。图\ref{fig:5-difficulty-groups}给出了三类场景的典型结果。误差图由渲染图与GT的逐像素绝对差生成，颜色越亮越红表示误差越大，颜色越暗越蓝表示结果更接近GT。
+
+\begin{figure}[H]
+    \centering
+    \setlength{\tabcolsep}{1.5pt}
+    \renewcommand{\arraystretch}{1.02}
+    \begin{tabular}{>{\centering\arraybackslash}m{0.09\textwidth}ccc}
+        & \textbf{GT} & \textbf{3DGS} & \textbf{Ours} \\
+        困难组 &
+        \includegraphics[width=0.225\textwidth]{hard_GT.png} &
+        \includegraphics[width=0.225\textwidth]{hard_3dgs.png} &
+        \includegraphics[width=0.225\textwidth]{hard_ours.png} \\
+        常规组 &
+        \includegraphics[width=0.225\textwidth]{normal_GT.png} &
+        \includegraphics[width=0.225\textwidth]{normal_3dgs.png} &
+        \includegraphics[width=0.225\textwidth]{normal_ours.png} \\
+        简单组 &
+        \includegraphics[width=0.225\textwidth]{easy_GT.png} &
+        \includegraphics[width=0.225\textwidth]{easy_3dgs.png} &
+        \includegraphics[width=0.225\textwidth]{easy_ours.png}
+    \end{tabular}
+
+    \vspace{0.15\baselineskip}
+    \definecolor{errorlow}{HTML}{071A52}
+    \definecolor{errorhigh}{HTML}{F44336}
+    \begin{minipage}[c]{0.84\textwidth}
+        \centering
+        \begin{tabular}{>{\centering\arraybackslash}m{0.11\linewidth}cc}
+            & \textbf{3DGS Error} & \textbf{Ours Error} \\
+            困难组 &
+            \includegraphics[width=0.36\linewidth]{hard_3dgs_error.png} &
+            \includegraphics[width=0.36\linewidth]{hard_ours_error.png} \\
+            常规组 &
+            \includegraphics[width=0.36\linewidth]{normal_3dgs_error.png} &
+            \includegraphics[width=0.36\linewidth]{normal_ours_error.png} \\
+            简单组 &
+            \includegraphics[width=0.36\linewidth]{easy_3dgs_error.png} &
+            \includegraphics[width=0.36\linewidth]{easy_ours_error.png}
+        \end{tabular}
+    \end{minipage}
+    \hspace{0pt}
+    \begin{minipage}[c]{0.065\textwidth}
+        \centering
+        \scriptsize 高\\[-0.1\baselineskip]
+        \begin{tikzpicture}
+            \shade[bottom color=errorlow,top color=errorhigh] (0,0) rectangle (0.22,3.8);
+            \draw (0,0) rectangle (0.22,3.8);
+        \end{tikzpicture}\\[-0.1\baselineskip]
+        \scriptsize 低
+    \end{minipage}
+    \caption{不同难度组的典型新视角合成结果与误差图}\label{fig:5-difficulty-groups}
+\end{figure}
+
+从图\ref{fig:5-difficulty-groups}可以看到，困难组中基础3DGS在高频地表纹理和边缘区域的误差更明显，本文方法对应误差减弱；常规组仍保留可观察改进；简单组中两者均已较接近GT，误差差异相对有限。这说明三类分组在重建难度上具有直观差异。
+
+\begin{table}[H]
+    \fontsize{10.5pt}{13.125pt}\selectfont
+    \caption{不同难度组下3DGS与本文方法的新视角合成质量}
+    \centering\label{tab:5-3}
+    \begin{adjustbox}{max width=\textwidth}
+    \begin{tabular}{cccccccc}
+        \toprule
+        难度分组 & 场景数量 & 3DGS PSNR & Ours PSNR & 3DGS SSIM & Ours SSIM & 3DGS LPIPS & Ours LPIPS \\
+        \midrule
+        困难组 & 62 & 27.62 & 33.81 & 0.786 & 0.896 & 0.355 & 0.200 \\
+        常规组 & 292 & 36.99 & 38.87 & 0.951 & 0.971 & 0.101 & 0.061 \\
+        简单组 & 62 & 40.90 & 41.33 & 0.980 & 0.982 & 0.046 & 0.036 \\
+        全部场景 & 416 & 36.17 & 38.49 & 0.931 & 0.961 & 0.131 & 0.078 \\
+        \bottomrule
+    \end{tabular}
+    \end{adjustbox}
+\end{table}
+
+表\ref{tab:5-3}给出了各难度组的指标均值。为进一步比较不同难度组的增益，图\ref{fig:5-difficulty-gains}分别绘制Ours相对3DGS的PSNR提升、SSIM提升和LPIPS下降量，柱长越大表示改进越明显。
+
+\begin{figure}[H]
+    \centering
+    \definecolor{hardbar}{RGB}{198,72,65}
+    \definecolor{normalbar}{RGB}{60,113,181}
+    \definecolor{easybar}{RGB}{79,145,89}
+    \definecolor{allbar}{RGB}{112,112,112}
+    \begin{tikzpicture}[x=1cm,y=0.68cm,font=\footnotesize]
+        \node[font=\bfseries] at (1.5,4.55) {$\Delta$PSNR/dB};
+        \node[font=\bfseries] at (5.7,4.55) {$\Delta$SSIM};
+        \node[font=\bfseries] at (9.9,4.55) {$\Delta$LPIPS$\downarrow$};
+        \foreach \y/\name in {3.6/困难组,2.6/常规组,1.6/简单组,0.6/全部场景}{\node[anchor=east] at (-0.12,\y) {\name};}
+        \draw[gray] (0,0.12) -- (3,0.12);
+        \node[below] at (0,0.12) {0}; \node[below] at (3,0.12) {6};
+        \fill[hardbar] (0,3.35) rectangle (2.85,3.85); \node[anchor=west] at (2.88,3.6) {5.70};
+        \fill[normalbar] (0,2.35) rectangle (0.80,2.85); \node[anchor=west] at (0.83,2.6) {1.60};
+        \fill[easybar] (0,1.35) rectangle (0.18,1.85); \node[anchor=west] at (0.21,1.6) {0.36};
+        \fill[allbar] (0,0.35) rectangle (1.16,0.85); \node[anchor=west] at (1.19,0.6) {2.31};
+        \begin{scope}[xshift=4.2cm]
+            \draw[gray] (0,0.12) -- (3,0.12);
+            \node[below] at (0,0.12) {0}; \node[below] at (3,0.12) {0.09};
+            \fill[hardbar] (0,3.35) rectangle (2.93,3.85); \node[anchor=west] at (2.96,3.6) {0.088};
+            \fill[normalbar] (0,2.35) rectangle (0.50,2.85); \node[anchor=west] at (0.53,2.6) {0.015};
+            \fill[easybar] (0,1.35) rectangle (0.07,1.85); \node[anchor=west] at (0.10,1.6) {0.002};
+            \fill[allbar] (0,0.35) rectangle (1.00,0.85); \node[anchor=west] at (1.03,0.6) {0.030};
+        \end{scope}
+        \begin{scope}[xshift=8.4cm]
+            \draw[gray] (0,0.12) -- (3,0.12);
+            \node[below] at (0,0.12) {0}; \node[below] at (3,0.12) {0.14};
+            \fill[hardbar] (0,3.35) rectangle (2.87,3.85); \node[anchor=west] at (2.90,3.6) {0.134};
+            \fill[normalbar] (0,2.35) rectangle (0.75,2.85); \node[anchor=west] at (0.78,2.6) {0.035};
+            \fill[easybar] (0,1.35) rectangle (0.15,1.85); \node[anchor=west] at (0.18,1.6) {0.007};
+            \fill[allbar] (0,0.35) rectangle (1.14,0.85); \node[anchor=west] at (1.17,0.6) {0.053};
+        \end{scope}
+    \end{tikzpicture}
+    \caption{不同难度组中本文方法相对3DGS的指标增益}\label{fig:5-difficulty-gains}
+\end{figure}
+
+由图\ref{fig:5-difficulty-gains}可知，本文方法在各难度组均取得正向收益，其中困难组增益最明显，常规组保持稳定提升，简单组因3DGS基线已较高而提升幅度较小。这说明本文方法更能改善易退化场景，同时不会削弱较易场景的重建质量。
 
 \section{远区域增强效果分析}
-为验证FAME模块对远区域细节恢复的作用，本文选取典型深空场景进行可视化对比，如图5-2所示。其中，第一列为原始3DGS方法，第二列为在3DGS基础上加入FAME模块后的结果，第三列为真实图像。红色矩形框标出了远区域中需要重点观察的局部区域，下方对应展示了红框区域的局部放大结果。
+为验证FAME模块对远区域细节恢复的作用，本文选取典型深空场景进行可视化对比，如图\ref{fig:5-2}所示。其中，第一列为原始3DGS方法，第二列为在3DGS基础上加入FAME模块后的结果，第三列为真实图像。红色矩形框标出了远区域中需要重点观察的局部区域，下方对应展示了红框区域的局部放大结果。
 
 \begin{figure}[H]
     \centering
@@ -152,7 +243,7 @@
 
 设某个高斯基元三个尺度方向中的最大值和最小值分别为$s_{\max}$和$s_{\min}$，本文采用尺度比例$s_{\max}/s_{\min}$衡量高斯形态的各向异性程度。该比例越大，说明该高斯在某一方向上的拉伸越明显；当比例超过设定阈值时，可认为该高斯存在异常尺度退化风险。本文进一步统计尺度比例分布及其累积分布函数，用于观察不同方法下高斯基元是否存在明显长尾现象。
 
-图5-4展示了3DGS与加入RVS后的尺度比例分布对比。其中，红色虚线表示异常尺度比例阈值。可以看到，3DGS的尺度比例分布存在明显长尾，部分高斯的$s_{\max}/s_{\min}$达到较大数值，说明训练过程中出现了较多异常拉伸的高斯基元。这类高斯通常更容易出现在远区域、弱纹理区域或视角约束不足的位置，可能导致局部漂浮、边缘模糊或表面表达不连续等现象。相比之下，加入RVS后，高斯尺度比例明显向较小范围集中，超过异常阈值的高斯数量显著减少，说明有效秩正则和体积正则能够对尺度分布和空间覆盖范围形成约束，从而抑制极端尺度退化。
+图\ref{fig:5-4}展示了3DGS与加入RVS后的尺度比例分布对比。其中，红色虚线表示异常尺度比例阈值。可以看到，3DGS的尺度比例分布存在明显长尾，部分高斯的$s_{\max}/s_{\min}$达到较大数值，说明训练过程中出现了较多异常拉伸的高斯基元。这类高斯通常更容易出现在远区域、弱纹理区域或视角约束不足的位置，可能导致局部漂浮、边缘模糊或表面表达不连续等现象。相比之下，加入RVS后，高斯尺度比例明显向较小范围集中，超过异常阈值的高斯数量显著减少，说明有效秩正则和体积正则能够对尺度分布和空间覆盖范围形成约束，从而抑制极端尺度退化。
 
 \begin{figure}[H]
     \centering
@@ -166,7 +257,7 @@
     \end{subfigure}
     \caption{RVS对高斯尺度比例分布的影响}\label{fig:5-4}
 \end{figure}
-进一步地，本文统计了不同测试视角下可见异常高斯的数量，如图5-5所示。3DGS在各个视角中可见的异常高斯数量均较高，而加入RVS后异常高斯数量大幅下降。以图中统计结果为例，基础设置下异常高斯总量约为90.3k，而加入RVS后降低至约810；在各测试视角中，3DGS的可见异常高斯数量约为78.0k至84.2k，而加入RVS后降低至约719至767。这说明RVS并非只在少数视角中产生作用，而是在不同观察视角下均能稳定抑制异常尺度高斯，使显式高斯表示更加规整。
+进一步地，本文统计了不同测试视角下可见异常高斯的数量，如图\ref{fig:5-5}所示。3DGS在各个视角中可见的异常高斯数量均较高，而加入RVS后异常高斯数量大幅下降。以图中统计结果为例，基础设置下异常高斯总量约为90.3k，而加入RVS后降低至约810；在各测试视角中，3DGS的可见异常高斯数量约为78.0k至84.2k，而加入RVS后降低至约719至767。这说明RVS并非只在少数视角中产生作用，而是在不同观察视角下均能稳定抑制异常尺度高斯，使显式高斯表示更加规整。
 
 \begin{figure}[H]
     \centering
@@ -206,7 +297,7 @@
     \includegraphics[width=0.82\textwidth]{外观一致性可视化结果.jpg}
     \caption{光照扰动条件下的新视角合成可视化对比}\label{fig:5-6}
 \end{figure}
-从图5-6可以看出，在复杂光照扰动条件下，开启外观一致性模块后的结果整体上更接近GT。第一行主要包含弱纹理区域和大范围明暗渐变区域，未开启外观一致性模块时，图像右侧暗部区域的色调偏移更加明显，场景纹理对比度也与GT存在差异；开启该模块后，整体亮度分布和暗部过渡更加稳定。第二行包含起伏结构、碎石和局部阴影区域，未开启模块时，碎石边缘和阴影附近容易出现颜色不均衡现象，而开启模块后，岩石区域的亮度层次和场景颜色更接近真实图像。第三行包含较多小尺度石块和局部颗粒结构，未开启模块时局部色调略有漂移，前景区域的亮暗关系不够自然；开启模块后，场景颜色、阴影边界以及小石块周围的外观变化更加连续。总体而言，外观一致性模块能够在低光、过曝、白平衡偏移和局部亮度变化等扰动下，提升模型对颜色分布和局部外观变化的表达能力，从而增强新视角合成结果的视觉一致性。
+从图\ref{fig:5-6}可以看出，在复杂光照扰动条件下，开启外观一致性模块后的结果整体上更接近GT。第一行主要包含弱纹理区域和大范围明暗渐变区域，未开启外观一致性模块时，图像右侧暗部区域的色调偏移更加明显，场景纹理对比度也与GT存在差异；开启该模块后，整体亮度分布和暗部过渡更加稳定。第二行包含起伏结构、碎石和局部阴影区域，未开启模块时，碎石边缘和阴影附近容易出现颜色不均衡现象，而开启模块后，岩石区域的亮度层次和场景颜色更接近真实图像。第三行包含较多小尺度石块和局部颗粒结构，未开启模块时局部色调略有漂移，前景区域的亮暗关系不够自然；开启模块后，场景颜色、阴影边界以及小石块周围的外观变化更加连续。总体而言，外观一致性模块能够在低光、过曝、白平衡偏移和局部亮度变化等扰动下，提升模型对颜色分布和局部外观变化的表达能力，从而增强新视角合成结果的视觉一致性。
 
 \section{消融实验分析}
 消融实验用于分析本文不同模块对新视角合成质量的贡献。实验以3DGS为基线，分别加入有效秩正则、体积正则、RVS、FAME以及FAME与RVS的组合，比较不同配置下的PSNR、SSIM和LPIPS指标变化。其中，RVS表示有效秩正则与体积正则的联合设置，主要用于约束高斯基元的尺度分布和整体体积变化；FAME主要作用于远区域图像重建监督。二者分别从高斯形态稳定性和远区域监督增强两个角度对3DGS进行补充。为展示各组件是否启用对指标的影响，表5-6以勾选形式列出了有效秩正则、体积正则、RVS和FAME的组合关系及对应的新视角合成质量。
