@@ -53,10 +53,10 @@
     \renewcommand{\arraystretch}{1.02}
     \begin{tabular}{cc}
         \textbf{3DGS} & \textbf{Ours} \\
-        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{361_3dgs.jpg} &
-        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{361_ours.jpg} \\
-        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{1307_3dgs.jpg} &
-        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{1307_ours.jpg}
+        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{361_3dgs.png} &
+        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{361_ours.png} \\
+        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{1307_3dgs.png} &
+        \includegraphics[width=0.46\textwidth,height=0.30\textheight,keepaspectratio]{1307_ours.png}
     \end{tabular}
     \caption{3DGS与本文方法的点云重建可视化对比}\label{fig:5-reprojection}
 \end{figure}
@@ -245,79 +245,7 @@
     \caption{不同难度组中本文方法相对3DGS的指标增益}\label{fig:5-difficulty-gains}
 \end{figure}
 
-由图\ref{fig:5-difficulty-gains}可知，本文方法在各难度组均取得正向收益，其中困难组增益最明显，常规组保持稳定提升，简单组因3DGS基线已较高而提升幅度较小。这说明本文方法更能改善易退化场景，同时不会削弱较易场景的重建质量。
-
-\section{远区域增强效果分析}
-为验证FAME模块对远区域细节恢复的作用，本文选取典型深空场景进行可视化对比，如图\ref{fig:5-2}所示。其中，第一列为原始3DGS方法，第二列为在3DGS基础上加入FAME模块后的结果，第三列为真实图像。红色矩形框标出了远区域中需要重点观察的局部区域，下方对应展示了红框区域的局部放大结果。
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.78\textwidth]{与+FAME模块对比.jpg}
-    \caption{FAME模块对远区域细节恢复效果的可视化对比}\label{fig:5-2}
-\end{figure}
-\vspace{-\baselineskip}
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.56\textwidth]{局部放大图.png}
-    \caption{局部放大结果对比}\label{fig:5-3}
-\end{figure}
-\vspace{-\baselineskip}
-\begin{table}[H]
-    \fontsize{10.5pt}{13.125pt}\selectfont
-    \caption{不同方法在远区域上的新视角合成质量对比}
-    \centering\label{tab:5-4}
-    \begin{adjustbox}{max width=\textwidth}
-    \begin{tabular}{cccc}
-        \toprule
-        Method & SSIM$\uparrow$ & PSNR$\uparrow$ & LPIPS$\downarrow$ \\
-        \midrule
-        mvgs & 0.943 & 37.13 & 0.134 \\
-        3dhgs & 0.909 & 34.91 & 0.182 \\
-        scgaussian & 0.655 & 22.95 & 0.442 \\
-        3DGS & 0.906 & 35.14 & 0.180 \\
-        3DGS + FAME & 0.940 & 37.73 & 0.118 \\
-        \textbf{Ours} & \textbf{0.953} & \textbf{38.41} & \textbf{0.094} \\
-        \bottomrule
-    \end{tabular}
-    \end{adjustbox}
-\end{table}
-从远区域评价结果可以看出，本文方法在远区域PSNR、SSIM和LPIPS上均取得较好表现，说明FAME远区域增强模块能够有效改善深空场景中远处结构的渲染质量。表\ref{tab:5-4}进一步给出了不同方法在远区域上的定量对比结果。与原始3DGS相比，加入FAME后SSIM由0.906提升至0.940，PSNR由35.14dB提升至37.73dB，LPIPS由0.180降低至0.118，表明FAME模块能够在结构相似性、像素重建误差和感知质量三个方面同时带来提升。
-
-造成这一现象的主要原因在于，3DGS训练时通常对整幅图像计算重建损失，而远区域在图像中往往只占据较小比例。相比前景岩石、近处纹理或高对比边缘，远处区域的像素数量更少、纹理变化更弱，因而在全图平均损失中的贡献容易被削弱。模型为了快速降低整体重建误差，通常会优先拟合近处区域和纹理明显区域，而远区域则可能出现细节模糊、层次不足或边缘弱化等问题。
-
-针对上述问题，FAME模块通过辅助深度结果构造远区域\textnormal{mask}，并在基础全图重建损失之外，额外计算远区域内的重建误差。这样，远处区域像素不再只是全图损失中的少量组成部分，而是作为一个独立的优化目标参与反向传播。该机制使模型在训练过程中更加关注远处区域纹理、背景层次和小尺度结构，从而缓解远区域被近景区域主导的问题。
-
-从视觉表现上看，FAME对远区域的改善主要体现在三个方面。第一，远处区域纹理更加清晰，原本容易被平滑化的弱纹理区域能够保留更多亮度变化和颗粒结构。第二，远区域中岩石边缘、结构起伏和背景轮廓更加稳定，减少了模糊边界和局部断裂现象。第三，远近区域之间的层次关系更加自然，模型不容易将远处区域简单拟合为平滑背景，从而提升整体场景的空间感。
-
-\section{RVS模块对高斯空间表示稳定性的分析}
-3D Gaussian Splatting中每个高斯基元具有三个尺度方向，其尺度分布直接影响高斯在三维空间中的形态。当某一尺度方向远大于其他方向时，高斯容易退化为针状结构；当整体尺度异常增大或缩小时，则可能造成局部空间覆盖不稳定。这类异常高斯基元虽然不一定直接对应真实几何误差，但会影响局部表面表达、边缘清晰度和新视角渲染稳定性。因此，为进一步分析RVS模块对高斯基元形态的约束作用，本文从尺度比例分布和异常高斯数量两个角度进行可视化统计。
-
-设某个高斯基元三个尺度方向中的最大值和最小值分别为$s_{\max}$和$s_{\min}$，本文采用尺度比例$s_{\max}/s_{\min}$衡量高斯形态的各向异性程度。该比例越大，说明该高斯在某一方向上的拉伸越明显；当比例超过设定阈值时，可认为该高斯存在异常尺度退化风险。本文进一步统计尺度比例分布及其累积分布函数，用于观察不同方法下高斯基元是否存在明显长尾现象。
-
-图\ref{fig:5-4}展示了3DGS与加入RVS后的尺度比例分布对比。其中，红色虚线表示异常尺度比例阈值。可以看到，3DGS的尺度比例分布存在明显长尾，部分高斯的$s_{\max}/s_{\min}$达到较大数值，说明训练过程中出现了较多异常拉伸的高斯基元。这类高斯通常更容易出现在远区域、弱纹理区域或视角约束不足的位置，可能导致局部漂浮、边缘模糊或表面表达不连续等现象。相比之下，加入RVS后，高斯尺度比例明显向较小范围集中，超过异常阈值的高斯数量显著减少，说明有效秩正则和体积正则能够对尺度分布和空间覆盖范围形成约束，从而抑制极端尺度退化。
-
-\begin{figure}[H]
-    \centering
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{30000_baseline.png}
-        \caption{3DGS}
-    \end{subfigure}
-    \begin{subfigure}[b]{0.49\linewidth}
-        \includegraphics[width=\linewidth]{30000_RVS.png}
-        \caption{3DGS+RVS}
-    \end{subfigure}
-    \caption{RVS对高斯尺度比例分布的影响}\label{fig:5-4}
-\end{figure}
-进一步地，本文统计了不同测试视角下可见异常高斯的数量，如图\ref{fig:5-5}所示。3DGS在各个视角中可见的异常高斯数量均较高，而加入RVS后异常高斯数量大幅下降。以图中统计结果为例，基础设置下异常高斯总量约为90.3k，而加入RVS后降低至约810；在各测试视角中，3DGS的可见异常高斯数量约为78.0k至84.2k，而加入RVS后降低至约719至767。这说明RVS并非只在少数视角中产生作用，而是在不同观察视角下均能稳定抑制异常尺度高斯，使显式高斯表示更加规整。
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.92\textwidth]{异常高斯数对比.png}
-    \caption{不同视角下异常高斯数量对比}\label{fig:5-5}
-\end{figure}
-从上述高斯尺度比例分布和异常高斯数量统计可以看出，RVS并不是直接提高某一张测试图像的像素拟合能力，而是通过约束三维高斯基元的空间形态，使场景表示更加稳定。对于3DGS而言，最终渲染图像是大量三维高斯投影到二维图像平面后进行颜色累积的结果。如果部分高斯在三维空间中过度拉伸或体积异常膨胀，其投影到图像平面后可能覆盖不合理的区域，进而造成局部颜色扩散、边界模糊或遮挡关系不稳定等问题。尤其在远区域和弱纹理区域，图像监督信号本身较弱，异常高斯更容易在优化过程中被保留下来，从而影响新视角下的结构一致性。
-
-因此，RVS对新视角合成质量的提升具有间接性。它并不是像FAME那样直接改变远区域像素的损失权重，而是从三维表示本身出发，减少异常尺度高斯对局部空间结构的干扰。当高斯基元的尺度方向分布更加合理、整体体积变化更加稳定时，不同视角下的颜色累积过程会更加一致，局部表面支撑也会更加可靠。这也是本文方法能够在SSIM和LPIPS等结构与感知指标上取得提升的重要原因。
+由图\ref{fig:5-difficulty-gains}可知，本文方法在各难度组均取得正向收益，其中困难组增益最明显，常规组保持稳定提升，简单组因3DGS基线已较高而提升幅度较小。这说明本文方法更能改善易退化场景，同时不会削弱较易场景的重建质量。上述实验主要反映正常成像条件下的整体新视角合成表现；考虑到深空场景中还常伴随跨视角光照和颜色差异，下面进一步分析光照扰动条件下的渲染鲁棒性。
 
 \section{光照扰动条件下的新视角合成鲁棒性分析}
 光照扰动实验用于分析模型在训练图像存在亮度和颜色变化时的新视角合成稳定性。实验在保持场景几何、相机位姿和训练测试划分不变的前提下，对训练图像构造低光、过曝、白平衡偏移和局部亮度变化等扰动，形成跨视角外观不一致的训练条件，并据此观察不同方法在测试视角下的渲染鲁棒性。
@@ -409,24 +337,18 @@
         \centering
         \appearanceLuminancePlot{content/figures/luminance_413_gt.dat}{content/figures/luminance_413_lu.dat}{content/figures/luminance_413_wg.dat}{content/figures/luminance_413_ours.dat}
         \caption{场景1}
-    \end{subfigure}\\[-0.2\baselineskip]
+    \end{subfigure}\\[-0.25\baselineskip]
     \begin{subfigure}[t]{0.96\textwidth}
         \centering
         \appearanceLuminancePlot{content/figures/luminance_434_gt.dat}{content/figures/luminance_434_lu.dat}{content/figures/luminance_434_wg.dat}{content/figures/luminance_434_ours.dat}
         \caption{场景2}
-    \end{subfigure}
-    \caption{三个场景的亮度分布对比。横轴为亮度值，纵轴为归一化频率；每张子图对应一个场景，曲线比较GT、Luminance-GS、WildGaussians和Ours。}\label{fig:5-appearance-luminance}
-\end{figure}
-
-\begin{figure}[H]
-    \ContinuedFloat
-    \centering
+    \end{subfigure}\\[-0.25\baselineskip]
     \begin{subfigure}[t]{0.96\textwidth}
         \centering
         \appearanceLuminancePlot{content/figures/luminance_455_gt.dat}{content/figures/luminance_455_lu.dat}{content/figures/luminance_455_wg.dat}{content/figures/luminance_455_ours.dat}
         \caption{场景3}
     \end{subfigure}
-    \caption[]{三个场景的亮度分布对比（续）}
+    \caption{三个场景的亮度分布对比。横轴为亮度值，纵轴为归一化频率；每张子图对应一个场景，曲线比较GT、Luminance-GS、WildGaussians和Ours。}\label{fig:5-appearance-luminance}
 \end{figure}
 
 结合图\ref{fig:5-6}和图\ref{fig:5-appearance-luminance}可以看到，三组场景中各方法呈现出较一致的差异趋势。Luminance-GS在可视化结果中更容易抬高高亮区域亮度，亮度曲线相对GT向高亮侧偏移或变宽，说明整体亮度调节仍可能带来分布偏差。WildGaussians的曲线在部分场景中与GT主体区间接近，但可视化图中仍存在上部区域平滑、边界扰动或结构异常，表明亮度统计接近并不等价于局部纹理稳定。相比之下，本文方法的亮度曲线整体更贴近GT主体分布，碎石纹理、明暗过渡和岩石附近局部层次也保持得更连续，因而在亮度分布控制与局部外观保持之间表现得更稳定。
@@ -473,4 +395,4 @@ RVS与FAME的单独结果还反映出二者在指标侧重点上的差异。FAME
 综上，整体消融结果表明，FAME和RVS分别从远区域监督增强与高斯空间表示稳定两个层面补充基础3DGS，二者结合后在像素误差、结构相似性和感知质量三个方面均取得最优结果。
 
 \section{本章小结}
-本章围绕深空场景的新视角合成任务，对本文方法进行了实验验证。首先介绍了实验环境、数据集、对比方法和评价指标，并采用PSNR、SSIM和LPIPS作为主要图像质量评价标准。随后，通过整体新视角合成质量对比验证了本文方法相较基础3DGS和其他对比方法的优势；通过远区域实验分析了FAME对远处区域纹理、目标边缘和背景层次的增强作用；通过RVS相关实验说明高斯空间形态稳定约束能够改善显式高斯表示的稳定性；通过光照扰动实验验证了外观建模策略在复杂成像条件下的有效性；最后通过消融实验进一步分析了不同模块对最终性能的贡献。实验结果表明，本文方法能够有效提升深空场景的新视角合成质量，并在远区域渲染和复杂外观条件下表现出更好的适应能力。
+本章围绕深空场景的新视角合成任务，对本文方法进行了实验验证。首先介绍了实验环境、数据集、对比方法和评价指标，并采用PSNR、SSIM和LPIPS作为主要图像质量评价标准。随后，从点云重建和重投影误差角度分析了本文方法的三维场景表示稳定性，并通过整体新视角合成质量对比验证了本文方法相较基础3DGS和其他对比方法的优势。在此基础上，进一步通过光照扰动实验评估外观建模策略在复杂成像条件下的有效性，最后通过消融实验分析FAME、有效秩正则和体积正则等模块对最终性能的贡献。实验结果表明，本文方法能够有效提升深空场景的新视角合成质量，并在场景表示稳定性和复杂外观条件下表现出更好的适应能力。
