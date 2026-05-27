@@ -123,7 +123,7 @@
         \includegraphics[width=\linewidth]{fig3_4g_mvgs_roi.png}
         \caption{MVGS}
     \end{subfigure}
-    \caption{远区域监督不足导致的局部细节退化可视化。第一行展示测试视角图像及其深度图，红框标出了用于局部放大的远景区域。}\label{fig:3-4}
+    \caption{远区域监督不足导致的局部细节退化可视化。第一行展示测试视角图像及其深度图，红框标出了用于局部放大的远景区域，第二行比较不同方法在该区域内的渲染结果。}\label{fig:3-4}
 \end{figure}
 
 图\ref{fig:3-4}下排显示，GT中的远景局部放大图仍包含可辨认的碎石边缘、细碎纹理和局部明暗起伏，而不同渲染结果均出现不同程度的边界变软和纹理平滑。该现象说明，远区域退化并不是因为真实结构不存在，而是这些细小结构在全图光度优化中容易被弱化。
@@ -208,27 +208,28 @@ r_s=\frac{s_{\max}}{s_{\min}}
         \caption{高亮训练图}
     \end{subfigure}
     \par\medskip
-    \begin{subfigure}[t]{0.24\linewidth}
+    \begin{subfigure}[t]{0.32\linewidth}
         \centering
         \includegraphics[width=\linewidth]{fig3_6d_test_gt.png}
         \caption{GT}
     \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.24\linewidth}
+    \begin{subfigure}[t]{0.32\linewidth}
         \centering
         \includegraphics[width=\linewidth]{fig3_6e_3dgs_render.png}
         \caption{3DGS}
     \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.24\linewidth}
+    \begin{subfigure}[t]{0.32\linewidth}
         \centering
         \includegraphics[width=\linewidth]{fig3_6f_luminance_gs_render.png}
         \caption{Luminance-GS}
-    \end{subfigure}\hfill
-    \begin{subfigure}[t]{0.24\linewidth}
+    \end{subfigure}
+    \par\medskip
+    \begin{subfigure}[t]{0.72\linewidth}
         \centering
         \includegraphics[width=\linewidth]{fig3_6g_luminance_distribution.png}
         \caption{亮度分布对比}
     \end{subfigure}
-    \caption{跨视角光照条件不一致导致的光度优化偏差可视化。第一行展示训练图像中的低光、正常和高亮观测差异；第二行展示测试GT、不同方法渲染结果及亮度分布对比。}\label{fig:3-6}
+    \caption{跨视角光照条件不一致导致的光度优化偏差可视化。第一行展示训练图像中的低光、正常和高亮观测差异；第二行展示测试GT及不同方法渲染结果，第三行展示亮度分布对比。}\label{fig:3-6}
 \end{figure}
 
 图\ref{fig:3-6}表明，训练图像之间存在明显亮度跨度，而测试视角中的渲染结果与GT之间也存在亮度和局部外观差异。3DGS需要用同一组场景颜色参数解释多种光照观测，容易在低光、高亮和正常图像之间形成折中；亮度分布的偏移进一步说明，跨视角光照扰动会进入训练过程并改变颜色优化方向。
