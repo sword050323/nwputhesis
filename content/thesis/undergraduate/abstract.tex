@@ -2,22 +2,38 @@
 
 % 中文摘要
 \begin{abstract}
-    深空场景通常具有观测视角有限、成像距离远、纹理信息弱和光照条件不稳定等特点。这些因素会削弱多视角图像中的几何与外观线索，使场景结构、尺度关系和跨视角外观难以稳定表达。传统多视图几何方法依赖可靠的特征匹配和充分的视角约束，在弱纹理、强阴影和视角覆盖不足条件下容易出现重建不完整、结构不稳定等问题。因此，如何在有限且非理想的观测条件下构建稳定的三维场景表示，是深空环境感知与可视化中的关键问题。
+    深空场景三维重建与新视角合成旨在利用有限多视角图像恢复深空地表或空间目标的三维场景表示，并在未观测视角下生成连续、稳定的渲染图像。该任务对于空间探测数据可视化、任务规划、环境理解和虚拟仿真具有重要意义。然而，与常规地面场景相比，深空场景通常存在观测视角有限、成像距离远、远近深度跨度大、地表纹理弱以及光照条件不稳定等问题。这些因素削弱了多视角图像中的几何约束和光度一致性，从而限制了传统三维重建方法与原始3D Gaussian Splatting在远区域细节恢复、高斯基元形态稳定及新视角渲染质量等方面的表现。
 
-    本文提出了一种Deep-Space Scene Gaussian Splatting (DSS-GS)方法，用于深空场景的三维重建与新视角合成。该方法以3D Gaussian Splatting为基础，利用多视角图像和相机参数构建显式三维高斯场景表示，并通过可微分渲染完成场景优化与新视角渲染。针对远区域纹理弱、场景深度跨度大以及跨视角光照不一致等问题，DSS-GS设计了Far-region Adaptive Mask Enhancement (FAME)远区域增强模块和Rank-Volume Stabilizer (RVS)高斯形态与尺度稳定模块，并在存在明显光度不一致时引入参考引导的外观建模策略作为可选处理路径，以提升模型在非理想观测条件下的适应能力。
+    针对上述问题，本文提出一种面向深空场景的Deep-Space Scene Gaussian Splatting（DSS-GS）方法。该方法以3D Gaussian Splatting为基础，构建显式三维高斯场景表示，并通过可微渲染完成场景优化与新视角合成。为适应深空场景中的远区域弱监督、高斯形态不稳定以及跨视角光度不一致问题，本文在原始3DGS框架中引入远区域增强策略、高斯形态稳定约束和可选的参考引导外观一致性模块，使模型能够在保持整体渲染质量的同时，更充分地表达远处地形区域和弱纹理结构，并缓解光照扰动导致的跨视角色彩偏差。
         
-    本文实现了数据处理、训练、渲染与评估等模块，并在M3arsSynth数据集的火星场景上进行实验验证。相比原始3DGS，DSS-GS将SSIM从0.931提升至0.961，PSNR从36.17 dB提升至38.49 dB，LPIPS从0.131降低至0.078。同时，在跨视角重投影深度误差指标上，本文方法由3DGS的0.287降低至0.242，降幅为15.7\%。实验结果表明，该方法能够提升深空场景的新视角合成质量，并在点云覆盖和跨视角重投影深度一致性分析中表现出更稳定的三维场景表示。
+    本文的主要贡献如下：
+
+    （1）将一种基于深度先验的远区域增强策略引入3DGS。FAME利用辅助单目深度构建自适应远区域掩膜，从而增强远距离地形区域在图像域中的监督信号，缓解远区域在优化过程中容易监督不足的问题。
+
+    （2）提出一种高斯形态稳定化模块，用于约束显式三维高斯基元。RVS结合有效秩正则和体积正则，对高斯形态分布和空间覆盖范围进行约束，从而提升高斯基元在有限视角和弱纹理条件下的表示稳定性。
+
+    （3）设计了一种基于参考引导的外观一致性可选模块，作为跨视角光度不一致条件下的辅助处理路径，用于建模视角间亮度和色彩差异，缓解光照扰动对新视角合成结果的影响。
+
+    （4）在M3arsSynth火星地表序列上的实验结果表明，DSS-GS取得了0.961的SSIM、38.49 dB的PSNR和0.078的LPIPS。与3DGS基线相比，DSS-GS的PSNR提升2.32 dB，LPIPS降低0.053，说明本文方法能够有效提升深空地表场景的新视角合成质量。
 
     \keywordslist{三维重建, 新视角合成, 3D Gaussian Splatting, 深空场景}
 \end{abstract}
 
 % 英文摘要
 \begin{engabstract}
-    Deep-space scenes are commonly characterized by limited view coverage, long-range imaging, insufficient texture, complex spatial structures, and unstable illumination. These factors weaken the visual cues available for 3D reconstruction and view inference, making it difficult to sufficiently represent scene geometry, scale relationships, and appearance variations. Conventional multi-view geometry methods rely on reliable feature matching and sufficient view constraints, but they can suffer from incomplete reconstruction and unstable structures under weak textures, shadows, and limited view coverage. Therefore, constructing a stable 3D scene representation from limited and non-ideal observations remains a key problem in deep-space scene perception and visualization.
+    Three-dimensional reconstruction and novel view synthesis for deep-space scenes aim to recover a 3D scene representation of planetary surfaces or space targets from sparse multi-view images and to render temporally coherent images from unobserved viewpoints. This task is important for space exploration data visualization, mission planning, environment understanding, and virtual simulation. Compared with conventional terrestrial scenes, however, deep-space scenes usually exhibit limited view coverage, long-range imaging, large near-far depth variations, weak surface texture, and unstable illumination. These factors weaken multi-view geometric constraints and photometric consistency, limiting the ability of conventional 3D reconstruction methods and vanilla 3D Gaussian Splatting to recover distant details, maintain stable Gaussian primitives, and synthesize high-quality novel views.
 
-    This paper presents Deep-Space Scene Gaussian Splatting (DSS-GS) for 3D reconstruction and NVS of deep-space scenes. Built upon 3D Gaussian Splatting (3DGS), DSS-GS takes multi-view images and camera parameters as input, constructs an explicit 3D Gaussian scene representation, and performs scene optimization and novel-view rendering through differentiable rendering. To address weak textures in distant regions, large depth spans, and cross-view illumination inconsistencies, DSS-GS introduces Far-region Adaptive Mask Enhancement (FAME) for far-region enhancement and Rank-Volume Stabilizer (RVS) for Gaussian shape-scale stabilization. In addition, a reference-guided appearance modeling strategy is used as an optional processing path when strong photometric inconsistency exists.
+    To address these challenges, this thesis presents Deep-Space Scene Gaussian Splatting (DSS-GS). Built upon 3D Gaussian Splatting (3DGS), the proposed method constructs an explicit 3D Gaussian scene representation and optimizes it through differentiable rendering for novel view synthesis. To handle weak supervision in distant regions, unstable Gaussian shapes, and cross-view photometric inconsistency, DSS-GS incorporates far-region enhancement, Gaussian shape stabilization, and an optional reference-guided appearance-consistency module into the vanilla 3DGS pipeline. This enables the model to better represent distant terrain and weakly textured structures while preserving the overall rendering quality and mitigating cross-view color shifts caused by illumination perturbations.
         
-    The proposed system implements data processing, training, rendering, and evaluation modules, and is validated on Martian scenes from the M3arsSynth dataset. Compared with vanilla 3DGS, DSS-GS improves SSIM from 0.931 to 0.961 and PSNR from 36.17 dB to 38.49 dB, while reducing LPIPS from 0.131 to 0.078. In addition, the reprojection depth error decreases from 0.287 for 3DGS to 0.242 for DSS-GS, corresponding to a 15.7\% reduction. These results indicate that the proposed method improves NVS quality for deep-space scenes and yields a more stable 3D representation in point-cloud coverage and reprojection depth consistency.
+    Our main contributions are summarized as follows:
+
+    (1) A depth-prior-based far-region enhancement strategy is introduced into 3DGS. FAME uses auxiliary monocular depth to construct an adaptive far-region mask, thereby increasing image-domain supervision for distant terrain regions that are prone to under-optimization.
+
+    (2) A Gaussian shape stabilization module is proposed to regularize explicit 3D Gaussian primitives. RVS combines effective-rank regularization with volume regularization to constrain the shape distribution and spatial support of Gaussian primitives, improving representation stability under limited viewpoints and weak texture.
+
+    (3) An optional reference-guided appearance consistency module is designed as an auxiliary path for cross-view photometric inconsistency. It models view-dependent brightness and color variations to reduce illumination-induced artifacts in novel view synthesis.
+
+    (4) Experiments on Martian surface sequences from M3arsSynth show that DSS-GS achieves an SSIM of 0.961, a PSNR of 38.49 dB, and an LPIPS of 0.078. Compared with the 3DGS baseline, DSS-GS improves PSNR by 2.32 dB and reduces LPIPS by 0.053, demonstrating its effectiveness in improving novel view synthesis quality for deep-space surface scenes.
 
     \engkeywordslist{3D reconstruction, novel view synthesis, 3D Gaussian Splatting, deep-space scene}
 \end{engabstract}
