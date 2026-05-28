@@ -52,7 +52,7 @@ FAME不依赖固定绝对深度阈值。不同深空场景在尺度、相机距�
 
 $r_{\mathrm{far}}$是控制远区域增强覆盖范围的关键超参数。当取值过小时，参与增强的远区域像素数量不足，FAME难以提供稳定的远处结构监督；当取值过大时，较多中近区域也会被纳入远区域增强范围，可能削弱模块针对远区域监督不足问题的专门性。为了系统确定合理取值，本文从数据集中在固定随机种子下选取10个场景，并设置$r_{\mathrm{far}}$为0.05、0.10、0.15、……、0.50共10个候选值。每个场景分别使用10个候选值完成训练、渲染和评价，共得到100组结果。为避免不同场景之间难度差异对结论造成干扰，本文在每个场景内部对10个$r_{\mathrm{far}}$结果进行归一化后再统计，以减弱场景难度差异对统计结果的影响。记场景$j$、比例$r$下归一化后的远区域PSNR、SSIM和LPIPS分别为$\tilde P_{j,r}$、$\tilde S_{j,r}$和$\tilde L_{j,r}$，其中PSNR和SSIM按正向指标处理，LPIPS按反向指标处理。该场景下比例$r$对应的far score定义为：
 \begin{equation}
-    S_{j,r}^{\mathrm{far}}=\frac{1}{3}\left(\tilde P_{j,r}+\tilde S_{j,r}-\tilde L_{j,r}\right)
+    S_{j,r}^{\mathrm{far}}=\frac{1}{3}\left(\tilde P_{j,r}+\tilde S_{j,r}+\tilde L_{j,r}\right)
 \end{equation}
 
 最终对10个场景的$S_{j,r}^{\mathrm{far}}$求平均，得到比例$r$的总体far score。不同远区域比例下的far score变化如图\ref{fig:4-ratio-score}所示。
