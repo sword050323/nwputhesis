@@ -18,6 +18,12 @@
 \section{SfM与COLMAP相机位姿估计}
 SfM即运动恢复结构，是一种根据多张图像同时估计相机运动和场景三维结构的方法。其基本流程包括特征点提取、特征匹配、几何验证、相机位姿估计、三角化和全局优化。COLMAP将这一流程工程化，在三维重建和新视角合成任务中常用于提供相机位姿和初始稀疏点云\upcite{ref2,ref3}。
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{colmap重建的罗马城.jpg}
+    \caption{COLMAP重建的罗马城示例}\label{fig:2-colmap-rome}
+\end{figure}
+
 在SfM中，重投影误差是衡量相机位姿和三维点估计精度的重要依据，其基本形式为：
 \begin{equation}
     E_{\mathrm{reproj}}=\sum_j\sum_{i\in V_j}\left\|x_{ij}-\pi\left(K_j(R_jX_i+t_j)\right)\right\|_2^2
@@ -81,13 +87,7 @@ Bundle Adjustment通过联合优化相机参数和三维点坐标，使整体重
 \end{equation}
 其中，$\hat I$表示渲染图像，$I$表示真实图像，$\lambda_{\mathrm{ssim}}$为结构相似性损失权重。$\mathcal{L}_1$损失关注像素级颜色误差，SSIM损失关注局部结构相似性，二者结合能够同时约束颜色重建和图像结构保持。
 
-3DGS的优势在于显式表示直观、训练速度较快、渲染效率较高，并能够通过可微splatting实现高质量实时新视角合成。与基于隐式神经场的方法相比，3DGS直接维护一组三维高斯基元，其空间位置、尺度、旋转、不透明度和颜色特征均具有明确的参数含义，便于进行可视化分析和后续渲染操作。同时，基于光栅化的前向渲染过程避免了沿每条相机光线进行大量采样，使其在训练效率和实时显示方面具有明显优势。为更直观地说明3DGS从高斯初始化、可微渲染到损失反向传播的整体流程，图\ref{fig:2-1}给出了其基本处理框架。
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.92\textwidth]{3dgs_pipeline.png}
-    \caption{3D Gaussian Splatting基本流程示意图}\label{fig:2-1}
-\end{figure}
+3DGS的优势在于显式表示直观、训练速度较快、渲染效率较高，并能够通过可微splatting实现高质量实时新视角合成。与基于隐式神经场的方法相比，3DGS直接维护一组三维高斯基元，其空间位置、尺度、旋转、不透明度和颜色特征均具有明确的参数含义，便于进行可视化分析和后续渲染操作。同时，基于光栅化的前向渲染过程避免了沿每条相机光线进行大量采样，使其在训练效率和实时显示方面具有明显优势。
 
 \section{深空场景数据集介绍}
 深空场景数据通常来源于真实探测任务归档、轨道遥感观测、巡视器近地表成像、人工语义标注以及仿真合成流程。与常规室内场景或物体级数据相比，深空场景数据具有成像距离跨度大、纹理信息弱、光照变化明显、视角覆盖稀疏和任务约束强等特点。因此，这类数据往往不能只依赖图像本身，还需要结合相机参数、时间序列关系、语义标注、地形高程或三维几何信息，才能支撑三维重建、新视角合成、导航感知和任务仿真等研究。
@@ -96,13 +96,43 @@ Bundle Adjustment通过联合优化相机参数和三维点坐标，使整体重
 
 第一类是真实任务归档数据，代表性数据源包括NASA Planetary Data System (PDS)和欧洲航天局Planetary Science Archive (PSA)\upcite{ref33,ref35}。这类数据主要保存探测任务返回的科学与工程数据，覆盖轨道器、着陆器、巡视器和其他行星探测任务，具有真实性强、任务覆盖广和长期可追溯等特点。但真实任务归档通常面向科学数据保存和检索，而不是直接面向计算机视觉任务构建训练集、测试集和统一相机轨迹。因此，在用于三维重建或新视角合成前，通常需要额外完成数据筛选、图像预处理、相机参数整理、视角关系构建和序列划分等工作。
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.60\textwidth]{PDS数据图片.jpg}
+    \caption{PDS真实任务归档数据示例}\label{fig:2-pds-data}
+\end{figure}
+
 第二类是面向多视角重建、三维一致性建模或新视角合成的数据集。M3arsSynth是这类数据的代表之一，其以PDS中的真实火星导航图像为基础，通过三维重建和渲染流程生成多视角视频序列，并提供相机轨迹及相关多模态信息\upcite{ref10}。与仅包含单张图像或语义标签的数据集相比，这类数据具有更明确的视角序列关系和相机运动信息，能够支持训练视角与测试视角的划分，因此更适合用于分析多视角几何约束、连续视角渲染和新视角合成效果。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{M3arsSynth视频序列.png}
+    \caption{M3arsSynth视频序列数据示例}\label{fig:2-m3arssynth}
+\end{figure}
 
 第三类是轨道遥感与地形高程数据。火星、月球和小行星等天体的轨道遥感影像通常具有较大覆盖范围，可用于地表形貌分析、数字高程模型构建和地形理解。例如，HiRISE等火星轨道相机能够提供高分辨率地表影像\upcite{ref36}，Ames Stereo Pipeline (ASP)等立体视觉处理工具可用于从轨道或巡视器立体影像中生成数字地形模型、正射影像和三维模型\upcite{ref37}。这类数据更侧重宏观地形、地貌结构和高程变化，适合用于地形建模、地貌分析和遥感解释，但其成像视角、分辨率和任务组织形式与近地表多视角新视角合成任务仍存在差异。
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.82\textwidth]{HIRISE数字地形.jpg}
+    \caption{HiRISE数字地形数据示例}\label{fig:2-hirise-terrain}
+\end{figure}
+
 第四类是语义标注与场景理解数据。AI4Mars是这类数据的代表，它由Curiosity、Opportunity和Spirit等火星车图像构成，包含大规模像素级地形标注，可用于训练和验证火星场景中的地形类别识别模型\upcite{ref34}。这类数据的优势在于提供了丰富的语义监督，有助于研究障碍物识别、可通行区域分析和任务辅助感知；但其主要目标不是三维重建或新视角合成，通常不提供连续多视角相机轨迹和可直接用于渲染评价的测试视角。因此，这类数据更适合作为深空场景理解和语义先验研究的数据基础。
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{AImars语义标注数据集.jpg}
+    \caption{AI4Mars语义标注数据集示例}\label{fig:2-ai4mars}
+\end{figure}
+
 第五类是仿真合成与任务模拟数据。由于真实深空探测数据获取成本高、视角覆盖有限且标注困难，研究中常借助仿真平台、物理渲染器或程序化地形生成方法构造模拟月面、火星地表或小天体表面场景。例如，已有工作通过真实高程模型、撞击坑模型和分形地形构建合成行星地表，用于测试行星着陆与视觉导航系统\upcite{ref38}。这类数据可以较方便地控制相机轨迹、光照方向、地形几何和传感器参数，并能够生成深度、法向、语义标签等多种监督信息，因此适合用于算法预训练、任务演示、导航仿真和极端条件测试。然而，合成数据与真实探测图像之间通常存在外观分布和成像噪声差异，在用于真实深空场景建模时需要关注域差异问题。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.60\textwidth]{simulation.jpg}
+    \caption{仿真合成数据示例}\label{fig:2-simulation-data}
+\end{figure}
 
 表\ref{tab:2-dataset}进一步总结了上述数据类型的代表数据、主要信息和适用任务。
 \begin{table}[H]
