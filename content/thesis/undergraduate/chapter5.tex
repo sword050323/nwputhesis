@@ -380,9 +380,23 @@
     \end{minipage}
 \end{table}
 
-从表\ref{tab:5-6}可以看出，单独启用Effective Rank能够带来明显增益，而单独启用Volume Reg.的提升较小，说明尺度方向分布约束对渲染质量影响更直接。当二者联合构成RVS后，三项指标进一步改善，表明有效秩正则和体积正则具有互补作用。
+从表\ref{tab:5-6}可以看出，单独启用Effective Rank能够带来明显增益，而单独启用Volume Reg.的提升较小，说明尺度方向分布约束对渲染质量影响更直接。当二者联合构成RVS后，三项指标进一步改善，表明有效秩正则和体积正则具有互补作用。为进一步观察RVS对渲染结果的影响，图\ref{fig:5-ablation-rvs}给出了RVS模块的消融可视化结果。可以看到，引入RVS后，局部结构边缘和地表纹理的连续性更好，说明高斯形态与尺度分布的稳定化约束能够减少异常高斯基元对新视角渲染的干扰。
 
-FAME单独使用时也能显著提升PSNR、SSIM和LPIPS，说明远区域监督增强对深空场景新视角合成具有直接贡献。当FAME与RVS同时启用时，三项指标均达到最优，说明远区域监督增强和高斯表示稳定约束能够形成互补。
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.86\textwidth]{消融实验-RVS.jpg}
+    \caption{RVS模块消融可视化结果}\label{fig:5-ablation-rvs}
+\end{figure}
+
+FAME单独使用时也能显著提升PSNR、SSIM和LPIPS，说明远区域监督增强对深空场景新视角合成具有直接贡献。图\ref{fig:5-ablation-fame}进一步展示了FAME模块的消融可视化结果。加入FAME后，远区域和弱纹理区域的细节表达更加清晰，边缘过渡也更加稳定，表明远区域自适应掩膜能够引导模型在训练过程中更充分地关注远距离地形区域。
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.86\textwidth]{消融实验-FAME.jpg}
+    \caption{FAME模块消融可视化结果}\label{fig:5-ablation-fame}
+\end{figure}
+
+当FAME与RVS同时启用时，三项指标均达到最优。结合表\ref{tab:5-6}、图\ref{fig:5-ablation-rvs}和图\ref{fig:5-ablation-fame}可以看出，RVS主要从高斯形态稳定性角度改善空间表达，FAME则从远区域图像监督角度增强细节恢复，二者分别作用于3DGS优化中的不同环节，因此能够形成互补并带来最优综合表现。
 
 % 从表\ref{tab:5-6}可以看出，各消融配置均在不同程度上改善了3DGS的新视角合成质量。单独启用Effective Rank时，三项指标提升较为明显；单独启用Volume Reg.时，性能增益相对有限；当二者联合构成RVS后，SSIM、PSNR和LPIPS均进一步改善。单独加入FAME同样能够带来显著收益，而FAME与RVS同时启用时取得全表最优结果，说明远区域监督增强与高斯表示稳定约束均对最终性能具有贡献，且联合使用更有利于获得稳定的综合提升。
 
