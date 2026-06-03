@@ -89,12 +89,6 @@ Bundle Adjustment是COLMAP稀疏重建中的关键优化步骤。它通过联合
 \end{equation}
 其中，$\mu_i$表示高斯中心位置，$s_i$表示尺度参数，$r_i$表示旋转参数，$\alpha_i$表示不透明度，$\mathrm{SH}_i$表示球谐颜色系数。在训练过程中，3DGS通过可微光栅化器将三维高斯渲染为图像，并将渲染图像与真实图像进行比较，利用反向传播优化上述高斯参数。
 
-基础图像重建损失通常由像素级颜色误差和结构相似性损失共同组成：
-\begin{equation}
-    \mathcal{L}_{\mathrm{base}}=(1-\lambda_{\mathrm{ssim}})\left\|\hat I-I\right\|_1+\lambda_{\mathrm{ssim}}\left(1-\mathrm{SSIM}(\hat I,I)\right)
-\end{equation}
-其中，$\hat I$表示渲染图像，$I$表示真实图像，$\lambda_{\mathrm{ssim}}$为结构相似性损失权重。$\left\|\hat I-I\right\|_1$项关注像素级颜色误差，$\mathrm{SSIM}$项关注局部结构相似性，二者结合能够同时约束颜色重建和图像结构保持。
-
 3DGS的优势在于显式表示直观、训练速度较快、渲染效率较高，并能够通过可微splatting实现高质量实时新视角合成。与基于隐式神经场的方法相比，3DGS直接维护一组三维高斯基元，其空间位置、尺度、旋转、不透明度和颜色特征均具有明确的参数含义，便于进行可视化分析和后续渲染操作。同时，基于光栅化的渲染过程避免了沿每条相机光线进行大量采样，使其在训练效率和实时显示方面具有明显优势。
 
 \section{深空场景数据集介绍}

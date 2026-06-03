@@ -21,12 +21,7 @@ DSS-GS的整体框架如图\ref{fig:4-1}所示。方法输入包括多视角训�
 
 在颜色建模路径中，跨视角外观一致性建模用于处理明显光照扰动或颜色差异。该分支通过参考图像特征和视角信息补充动态外观表达，使颜色预测能够同时考虑场景固有结构与成像外观变化，从而缓解跨视角光照不一致对颜色优化带来的影响。
 
-为了统一描述上述模块，本文将基础3DGS的图像重建损失记为$\mathcal{L}_{\mathrm{base}}$。该损失由像素级颜色误差和结构相似性误差组成：
-\begin{equation}
-    \mathcal{L}_{\mathrm{base}}=(1-\lambda_{\mathrm{ssim}})\left\|\hat I-I\right\|_1+\lambda_{\mathrm{ssim}}\left(1-\mathrm{SSIM}(\hat I,I)\right)
-\end{equation}
-
-其中，$\hat I$表示训练视角下的渲染图像，$I$表示对应真实图像，$\lambda_{\mathrm{ssim}}$为结构相似性项权重。DSS-GS以该基础损失保证整体图像重建质量，并在其上叠加远区域增强损失、尺度形态稳定损失以及可选的外观一致性正则。后续各节将分别给出FAME、RVS和外观一致性建模的具体形式，最后汇总完整训练目标与模块关系。
+上述三个路径分别对应图像监督增强、三维表示稳定和外观一致性建模。后续各节将分别给出FAME、RVS和外观一致性建模的具体形式，并在总体训练目标中统一说明各训练损失及其优化目标。
 
 \section{FAME远区域增强模块}
 
@@ -65,21 +60,14 @@ $r_{\mathrm{far}}$是控制远区域增强覆盖范围的关键超参数。当�
 
 由图\ref{fig:4-ratio-score}可知，$r_{\mathrm{far}}=0.30$取得最高远区域得分，其值为0.3392。相比0.20和0.25，0.30在远区域归一化得分上仍保持优势；当比例继续增大到0.35及以上时，远区域得分整体下降，说明过宽的远区域掩膜$M_{\mathrm{far}}$会引入更多中近区域，削弱FAME对远区域监督不足问题的针对性。因此，本文最终选择$r_{\mathrm{far}}=0.30$作为远区域划分比例。该取值是在候选比例实验中根据远区域渲染质量确定的默认设置。
 
-\enlargethispage{\baselineskip}
 在得到远区域掩膜$M_{\mathrm{far}}$后，FAME对远区域内渲染图像与真实图像之间的颜色误差进行单独计算。远区域增强损失定义为：
-\pagebreak
 \begin{equation}
     \mathcal{L}_{\mathrm{FAME}}=\frac{\left\|M_{\mathrm{far}}\odot(\hat I-I)\right\|_1}{3\sum_{u,v}M_{\mathrm{far}}(u,v)+\epsilon}
 \end{equation}
 
 式中，$\odot$表示逐像素乘法，$\epsilon$为防止分母为零的稳定项，分母中的系数3对应RGB三个颜色通道。该损失只在远区域掩膜$M_{\mathrm{far}}$覆盖范围内计算平均颜色误差，使远区域像素不再只是全图损失中的一小部分，而是作为独立监督项参与优化。
 
-加入FAME后的训练目标可写为：
-\begin{equation}
-    \mathcal{L}=\mathcal{L}_{\mathrm{base}}+\lambda_{\mathrm{fame}}\mathcal{L}_{\mathrm{FAME}}
-\end{equation}
-
-其中，$\lambda_{\mathrm{fame}}$为远区域增强损失权重，用于控制远区域监督与全图重建监督之间的平衡。FAME的优势在于实现方式直接，主要是在原有全图重建损失基础上额外引入远区域监督项，使远处区域在训练过程中获得更明确的优化信号。由此，模型能够在保持整体重建目标的同时，对深空场景中容易被忽略的远区域结构形成更强约束。
+后续总体训练目标将把$\mathcal{L}_{\mathrm{FAME}}$与基础重建损失统一组合，并通过权重$\lambda_{\mathrm{fame}}$控制远区域监督与全图重建监督之间的平衡。FAME的优势在于实现方式直接，主要是在原有全图重建损失基础上额外引入远区域监督项，使远处区域在训练过程中获得更明确的优化信号。由此，模型能够在保持整体重建目标的同时，对深空场景中容易被忽略的远区域结构形成更强约束。
 
 \section{RVS高斯形态与尺度稳定模块}
 
@@ -120,12 +108,7 @@ RVS由有效秩正则和体积正则两部分组成。前者关注高斯三个�
 
 其中，$\mathrm{median}(\{v_i\})$表示当前高斯体积集合的中位数。相比均值，中位数不容易被少量极大或极小高斯影响。该正则项能够抑制局部高斯体积过度偏离整体分布，从而减少异常膨胀和过度收缩。
 
-结合有效秩正则和体积正则后，RVS损失可写为：
-\begin{equation}
-    \mathcal{L}_{\mathrm{RVS}}=\lambda_{\mathrm{erank}}\mathcal{L}_{\mathrm{erank}}+\lambda_{\mathrm{vol}}\mathcal{L}_{\mathrm{vol}}
-\end{equation}
-
-其中，$\lambda_{\mathrm{erank}}$和$\lambda_{\mathrm{vol}}$分别控制有效秩正则和体积正则的权重。有效秩正则主要防止高斯退化为细长形态，体积正则主要限制高斯整体覆盖范围异常。二者互补，使显式高斯表示在弱纹理和有限视角条件下仍能保持更合理的空间支撑关系。
+在总体训练目标中，有效秩正则和体积正则分别通过权重$\lambda_{\mathrm{erank}}$和$\lambda_{\mathrm{vol}}$进行加权。有效秩正则主要防止高斯退化为细长形态，体积正则主要限制高斯整体覆盖范围异常。二者互补，使显式高斯表示在弱纹理和有限视角条件下仍能保持更合理的空间支撑关系。
 
 RVS与FAME分别从三维表示约束和图像监督增强两个角度发挥作用。FAME使远区域获得更强图像监督，RVS使高斯基元的尺度形态更加稳定，二者共同提升深空场景中远区域结构表达和整体新视角渲染的稳定性。
 
@@ -177,31 +160,38 @@ FAME和RVS是本文面向深空场景的主要方法模块，分别对应远区�
 
 \section{总体训练目标与模块关系}
 
-综合上述模块，DSS-GS的完整训练目标可以表示为：
+为了统一描述DSS-GS的训练过程，首先将基础3DGS的图像重建损失记为$\mathcal{L}_{\mathrm{base}}$。该损失由像素级颜色误差和结构相似性误差组成：
+\begin{equation}
+    \mathcal{L}_{\mathrm{base}}=(1-\lambda_{\mathrm{ssim}})\left\|\hat I-I\right\|_1+\lambda_{\mathrm{ssim}}\left(1-\mathrm{SSIM}(\hat I,I)\right)
+\end{equation}
+其中，$\hat I$表示训练视角下的渲染图像，$I$表示对应真实图像，$\lambda_{\mathrm{ssim}}$为结构相似性项权重。$\left\|\hat I-I\right\|_1$项关注像素级颜色误差，$\mathrm{SSIM}$项关注局部结构相似性，二者共同保证整体图像重建质量。
+
+在基础重建损失之上，DSS-GS进一步叠加FAME远区域增强损失、RVS中的有效秩约束与体积约束，以及可选外观一致性建模中的采样坐标正则。综合上述模块，DSS-GS的完整训练目标可以表示为：
 \begin{equation}
     \mathcal{L}_{\mathrm{total}}=\mathcal{L}_{\mathrm{base}}+\lambda_{\mathrm{fame}}\mathcal{L}_{\mathrm{FAME}}+\lambda_{\mathrm{erank}}\mathcal{L}_{\mathrm{erank}}+\lambda_{\mathrm{vol}}\mathcal{L}_{\mathrm{vol}}+\lambda_{\mathrm{sc}}\mathcal{L}_{\mathrm{sc}}
 \end{equation}
-
-其中，$\mathcal{L}_{\mathrm{base}}$为基础图像重建损失，$\mathcal{L}_{\mathrm{FAME}}$为远区域增强损失，$\mathcal{L}_{\mathrm{erank}}$和$\mathcal{L}_{\mathrm{vol}}$分别为有效秩正则和体积正则，$\mathcal{L}_{\mathrm{sc}}$为启用外观一致性建模时的采样坐标正则。若不启用外观一致性模块，则$\lambda_{\mathrm{sc}}$对应项不参与训练。
+其中，$\mathcal{L}_{\mathrm{FAME}}$为远区域增强损失，$\mathcal{L}_{\mathrm{erank}}$和$\mathcal{L}_{\mathrm{vol}}$分别为有效秩正则和体积正则，$\mathcal{L}_{\mathrm{sc}}$为启用外观一致性建模时的采样坐标正则；$\lambda_{\mathrm{fame}}$、$\lambda_{\mathrm{erank}}$、$\lambda_{\mathrm{vol}}$和$\lambda_{\mathrm{sc}}$分别为对应损失项的权重。若不启用外观一致性模块，则$\lambda_{\mathrm{sc}}$对应项不参与训练。
 
 \begin{table}[H]
     \fontsize{10.5pt}{13.125pt}\selectfont
-    \caption{DSS-GS各模块的功能设计与优化目标}
+    \caption{DSS-GS各训练损失与优化目标}
     \centering\label{tab:4-modules}
     \begin{adjustbox}{max width=\textwidth}
-    \begin{tabular}{ccccc}
+        \begin{tabular}{>{\raggedright\arraybackslash}p{0.20\textwidth}>{\centering\arraybackslash}p{0.16\textwidth}>{\raggedright\arraybackslash}p{0.56\textwidth}}
         \toprule
-        模块 & 输入信息 & 作用对象 & 损失项 & 模块定位 \\
+        组成部分 & 对应损失项 & 优化目标 \tabularnewline
         \midrule
-        FAME & 辅助深度、远区域掩膜$M_{\mathrm{far}}$、渲染图像 & 远区域图像监督 & $\mathcal{L}_{\mathrm{FAME}}$ & 主要模块 \\
-        RVS & 高斯尺度参数 & 高斯形态与空间覆盖 & $\mathcal{L}_{\mathrm{erank}},\mathcal{L}_{\mathrm{vol}}$ & 主要模块 \\
-        外观一致性建模 & 参考图像、视角方向、位置编码 & 高斯颜色预测 & $\mathcal{L}_{\mathrm{sc}}$ & 辅助模块 \\
+        基础重建 & $\mathcal{L}_{\mathrm{base}}$ & 保证整体图像重建质量 \tabularnewline
+        FAME远区域增强 & $\mathcal{L}_{\mathrm{FAME}}$ & 强化远处地形和弱纹理区域监督 \tabularnewline
+        RVS有效秩约束 & $\mathcal{L}_{\mathrm{erank}}$ & 抑制单方向异常拉伸 \tabularnewline
+        RVS体积约束 & $\mathcal{L}_{\mathrm{vol}}$ & 限制异常膨胀或收缩，稳定空间覆盖 \tabularnewline
+        外观一致性建模 & $\mathcal{L}_{\mathrm{sc}}$ & 减少无效采样偏差，辅助建模跨视角外观变化 \tabularnewline
         \bottomrule
     \end{tabular}
     \end{adjustbox}
 \end{table}
 
-表\ref{tab:4-modules}总结了DSS-GS中各模块的作用对象和训练目标。可以看到，FAME和RVS分别对应图像监督增强和高斯表示稳定，是本文方法的核心组成部分；外观一致性建模主要用于复杂光照条件下的辅助分析。训练完成后，模型保留优化后的三维高斯参数，并在测试视角下进行新视角渲染。由于DSS-GS没有改变3DGS的基本渲染方式，因此仍能利用显式高斯表示的快速渲染优势。
+表\ref{tab:4-modules}总结了DSS-GS各训练损失与对应优化目标。可以看到，基础重建损失用于维持整体渲染质量，FAME增强远区域图像监督，RVS从高斯形态和体积两个角度稳定空间表示，外观一致性建模则用于复杂光照条件下的辅助分析。训练完成后，模型保留优化后的三维高斯参数，并在测试视角下进行新视角渲染。由于DSS-GS没有改变3DGS的基本渲染方式，因此仍能利用显式高斯表示的快速渲染优势。
 
 \section{本章小结}
 
