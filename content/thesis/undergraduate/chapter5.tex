@@ -8,7 +8,7 @@
 
 实验数据选自M3arsSynth数据集的\textnormal{train\_video}划分。该数据集由Martian World Models工作提出，面向可控火星场景视频生成任务构建，其原始数据来源于NASA Planetary Data System(PDS)中的真实火星导航图像，并通过三维重建与渲染流程生成多视角视频序列\upcite{ref10}。本文共使用593个视频场景，其中416个场景用于整体新视角合成质量对比和模块消融实验，177个场景用于构造光照扰动数据，并训练与评估外观一致性分支。不同场景在相机轨迹、尺度范围、场景纹理丰富程度和远区域占比上存在差异，可以用于检验方法在复杂深空场景中的适应性。
 
-对于每个视频场景，本文首先从视频序列中抽取多视角图像，并运行COLMAP完成特征提取、图像匹配、相机位姿估计和稀疏点云重建。COLMAP输出的相机参数和初始化点云随后被统一用于3DGS及各对比方法训练，以保证不同方法具有一致的数据输入和几何初始化条件。辅助深度图由Metric3Dv2-Large生成\upcite{ref30}。Metric3Dv2-Large是面向零样本度量深度和表面法向估计的单目几何基础模型，通过统一相机空间变换和深度-法向联合优化提升跨数据集泛化能力。本文使用其作为相对深度排序依据，主要用于FAME远区域\textnormal{mask}构造。测试视角划分采用固定间隔留出策略，即每8张图像选取1张作为测试视角，其余图像作为训练视角。该设置能够在保持训练测试划分稳定的同时，评价模型对未观测视角的渲染泛化能力。实验硬件与软件环境配置如表\ref{tab:5-1}所示。
+对于每个视频场景，本文首先从视频序列中抽取多视角图像，并运行COLMAP完成特征提取、图像匹配、相机位姿估计和稀疏点云重建。COLMAP输出的相机参数和初始化点云随后被统一用于3DGS及各对比方法训练，以保证不同方法具有一致的数据输入和几何初始化条件。辅助深度图由Metric3Dv2-Large生成\upcite{ref30}。Metric3Dv2-Large是面向零样本度量深度和表面法向估计的单目几何基础模型，通过统一相机空间变换和深度-法向联合优化提升跨数据集泛化能力。本文使用其作为相对深度排序依据，主要用于FAME远区域掩膜$M_{\mathrm{far}}$构造。测试视角划分采用固定间隔留出策略，即每8张图像选取1张作为测试视角，其余图像作为训练视角。该设置能够在保持训练测试划分稳定的同时，评价模型对未观测视角的渲染泛化能力。实验硬件与软件环境配置如表\ref{tab:5-1}所示。
 
 \begin{table}[H]
     \fontsize{10.5pt}{13.125pt}\selectfont
@@ -36,7 +36,7 @@
 在对比方法设置方面，本文尽量保持各方法原始实现中的核心参数和默认训练策略，同时保证输入数据和评价方式一致。由于不同方法的代码结构、训练策略和适用场景存在差异，部分方法可能具有特定的初始化方式、正则项或训练超参数。本文不对这些方法进行过度改写，而是在统一数据和统一评价协议下运行，以尽量保留各方法本身的设计特点。对于无法稳定适配本文数据或在部分场景中运行失败的方法，本文在统计时仅使用能够正常完成训练、渲染和评价流程的有效结果，并在结果分析中结合方法特点进行解释。
 
 \subsection{默认超参数设置}
-本文默认超参数设置如下：基础重建损失中的SSIM权重$\lambda_{\mathrm{ssim}}=0.2$；FAME模块的远区域比例$r_{\mathrm{far}}=0.30$，损失权重$\lambda_{\mathrm{fame}}=1.0$；RVS模块中的有效秩正则权重$\lambda_{\mathrm{erank}}=0.05$，体积正则权重$\lambda_{\mathrm{vol}}=0.01$；启用外观一致性分支时，采样坐标正则权重$\lambda_{\mathrm{sc}}=0.01$。
+本文默认超参数设置如下：基础重建损失中的$\mathrm{SSIM}$权重$\lambda_{\mathrm{ssim}}=0.2$；FAME模块的远区域比例$r_{\mathrm{far}}=0.30$，损失权重$\lambda_{\mathrm{fame}}=1.0$；RVS模块中的有效秩正则权重$\lambda_{\mathrm{erank}}=0.05$，体积正则权重$\lambda_{\mathrm{vol}}=0.01$；启用外观一致性分支时，采样坐标正则权重$\lambda_{\mathrm{sc}}=0.01$。
 
 
 
@@ -63,7 +63,7 @@
 
 相比之下，本文方法的点云分布在多个区域表现出更连续的空间覆盖。对于远处地表和弱纹理区域，本文方法能够保留更多可见支撑，使局部空洞现象有所缓解；在边界和坡面过渡区域，点云分布也更加连贯，空间层次表现更稳定。该结果说明，本文方法的改进不仅体现在二维渲染结果上，也在点云可视化中表现出更连续的空间覆盖趋势。
 
-上述差异与本文方法的设计目标相一致。FAME通过远区域\textnormal{mask}提高远处区域在训练目标中的作用，使远处地表纹理和背景层次不易被近处强纹理区域主导；RVS从高斯尺度分布角度对显式表示进行约束，有助于提升局部空间支撑的稳定性。二者的具体贡献将在后续消融实验中进一步分析。
+上述差异与本文方法的设计目标相一致。FAME通过远区域掩膜$M_{\mathrm{far}}$提高远处区域在训练目标中的作用，使远处地表纹理和背景层次不易被近处强纹理区域主导；RVS从高斯尺度分布角度对显式表示进行约束，有助于提升局部空间支撑的稳定性。二者的具体贡献将在后续消融实验中进一步分析。
 
 为进一步定量描述上述场景表示差异，本文统计重投影光度误差和重投影深度误差，计算方式见第2.5节，结果如表\ref{tab:5-reprojection}所示。
 
@@ -74,7 +74,7 @@
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{ccc}
         \toprule
-        Method & Reproj. Photo$\downarrow$ & Reproj. Depth$\downarrow$ \\
+        Method & $E_{\mathrm{photo}}\downarrow$ & $E_{\mathrm{depth}}\downarrow$ \\
         \midrule
         3DGS & \textbf{0.118} & 0.287 \\
         Ours & 0.119 & \textbf{0.242} \\
@@ -90,7 +90,7 @@
 综合可视化和定量结果可以看出，本文方法相较3DGS在三维重建质量相关分析中表现出更连续的空间覆盖和更稳定的深度投影关系；同时，接近的重投影光度误差说明该改进并未明显削弱跨视角颜色对应关系。上述结果从点云覆盖、局部空洞、远区域支撑和重投影深度一致性等方面说明，本文方法能够改善深空场景中的三维场景表达质量。
 
 \section{新视角合成质量对比}
-新视角合成质量对比是本文实验的主要结果，用于评价不同方法在测试视角下的整体图像重建能力。表\ref{tab:5-2}给出了不同方法在深空场景上的PSNR、SSIM和LPIPS指标结果。
+新视角合成质量对比是本文实验的主要结果，用于评价不同方法在测试视角下的整体图像重建能力。表\ref{tab:5-2}给出了不同方法在深空场景上的$\mathrm{PSNR}$、$\mathrm{SSIM}$和$\mathrm{LPIPS}$指标结果。
 
 \begin{table}[H]
     \fontsize{10.5pt}{13.125pt}\selectfont
@@ -99,7 +99,7 @@
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{cccc}
         \toprule
-        Method & SSIM$\uparrow$ & PSNR$\uparrow$ & LPIPS$\downarrow$ \\
+        Method & $\mathrm{SSIM}\uparrow$ & $\mathrm{PSNR}\uparrow$ & $\mathrm{LPIPS}\downarrow$ \\
         \midrule
         3D Gaussian Splatting (ACM TOG’23) & 0.931 & 36.17 & 0.131 \\
         D$^2$GS (ICLR’26) & 0.951 & 35.31 & 0.086 \\
@@ -112,11 +112,11 @@
     \end{tabular}
     \end{adjustbox}
 \end{table}
-由表\ref{tab:5-2}可知，本文方法在SSIM、PSNR和LPIPS三项指标上均取得最优结果，说明DSS-GS在本文深空场景测试集上取得了更好的新视角合成质量。MVGS的PSNR和SSIM最接近本文方法，表现出较强竞争力；3D Gaussian Splatting也保持了较好的重建基础；SCGaussian则在三项指标上明显落后，说明其在本文深空数据上的适应性不足。
+由表\ref{tab:5-2}可知，本文方法在$\mathrm{SSIM}$、$\mathrm{PSNR}$和$\mathrm{LPIPS}$三项指标上均取得最优结果，说明DSS-GS在本文深空场景测试集上取得了更好的新视角合成质量。MVGS的$\mathrm{PSNR}$和$\mathrm{SSIM}$最接近本文方法，表现出较强竞争力；3D Gaussian Splatting也保持了较好的重建基础；SCGaussian则在三项指标上明显落后，说明其在本文深空数据上的适应性不足。
 
-具体来看，3DGS基线方法已经能够提供较稳定的显式三维表示，但其训练主要依赖全图重建误差，对远区域弱纹理和小尺度结构的关注仍然有限。D$^2$GS、3D-HGS和ERank-GS分别从深度、表面表达或表示约束等角度增强重建过程，其中D$^2$GS在SSIM和LPIPS上优于3DGS，但PSNR下降；3D-HGS和ERank-GS整体与3DGS接近，说明这类先验或约束能够在一定程度上改善结构与感知质量，但难以单独解决深空场景中的远区域监督不足问题。
+具体来看，3DGS基线方法已经能够提供较稳定的显式三维表示，但其训练主要依赖全图重建误差，对远区域弱纹理和小尺度结构的关注仍然有限。D$^2$GS、3D-HGS和ERank-GS分别从深度、表面表达或表示约束等角度增强重建过程，其中D$^2$GS在$\mathrm{SSIM}$和$\mathrm{LPIPS}$上优于3DGS，但$\mathrm{PSNR}$下降；3D-HGS和ERank-GS整体与3DGS接近，说明这类先验或约束能够在一定程度上改善结构与感知质量，但难以单独解决深空场景中的远区域监督不足问题。
 
-从匹配和多视角信息利用角度看，SCGaussian与MVGS呈现出明显差异。SCGaussian依赖结构匹配和一致性先验，但深空场景中大量弱纹理、重复纹理和远距离区域会降低匹配可靠性，因此整体指标较低。MVGS能够更充分利用多视角信息，在PSNR和SSIM上显著优于3DGS，说明跨视角约束对深空场景重建具有实际价值。
+从匹配和多视角信息利用角度看，SCGaussian与MVGS呈现出明显差异。SCGaussian依赖结构匹配和一致性先验，但深空场景中大量弱纹理、重复纹理和远距离区域会降低匹配可靠性，因此整体指标较低。MVGS能够更充分利用多视角信息，在$\mathrm{PSNR}$和$\mathrm{SSIM}$上显著优于3DGS，说明跨视角约束对深空场景重建具有实际价值。
 
 相比上述方法，本文方法的优势在于改进目标与深空场景的主要退化来源相对应。FAME直接增强远区域图像监督，RVS约束高斯形态和空间覆盖稳定性。二者分别对应远区域监督不足、显式高斯表示不稳定的问题，因此能够在MVGS较强结果的基础上继续提升整体指标，并取得表\ref{tab:5-2}中的最佳综合表现。
 
@@ -127,11 +127,11 @@
     \includegraphics[width=0.92\textwidth,height=0.72\textheight,keepaspectratio]{对比实验图.png}
     \caption{可视化对比实验结果图}\label{fig:5-method-comparison}
 \end{figure}
-从图\ref{fig:5-method-comparison}可以看到，3DGS作为基线方法能够恢复测试视角下的主要场景外观，但在细节纹理和局部边界处仍存在一定模糊。MVGS利用多视角约束后，部分区域的结构连续性和纹理清晰度相较3DGS有所改善，与表\ref{tab:5-2}中其PSNR和SSIM较高的结果一致。相比之下，本文方法在整体结构保持、远区域纹理表达和局部边缘稳定性上更接近GT，说明FAME与RVS在MVGS较强结果的基础上仍能进一步提升新视角合成质量。
+从图\ref{fig:5-method-comparison}可以看到，3DGS作为基线方法能够恢复测试视角下的主要场景外观，但在细节纹理和局部边界处仍存在一定模糊。MVGS利用多视角约束后，部分区域的结构连续性和纹理清晰度相较3DGS有所改善，与表\ref{tab:5-2}中其$\mathrm{PSNR}$和$\mathrm{SSIM}$较高的结果一致。相比之下，本文方法在整体结构保持、远区域纹理表达和局部边缘稳定性上更接近GT，说明FAME与RVS在MVGS较强结果的基础上仍能进一步提升新视角合成质量。
 
-上述结果反映了不同方法在全部测试场景上的平均表现。为进一步分析本文方法在不同重建难度场景下的稳定性，下面根据3DGS在各场景上的PSNR表现对测试场景进行分组分析。
+上述结果反映了不同方法在全部测试场景上的平均表现。为进一步分析本文方法在不同重建难度场景下的稳定性，下面根据3DGS在各场景上的$\mathrm{PSNR}$表现对测试场景进行分组分析。
 
-具体地，本文按3DGS在各场景上的PSNR由低到高排序，将前15\%划分为困难组，中间70\%划分为常规组，后15\%划分为简单组。图\ref{fig:5-difficulty-groups}给出了三类场景的典型结果。误差图由渲染图与GT的逐像素绝对差生成，颜色越亮越红表示误差越大，颜色越暗越蓝表示结果更接近GT。
+具体地，本文按3DGS在各场景上的$\mathrm{PSNR}$由低到高排序，将前15\%划分为困难组，中间70\%划分为常规组，后15\%划分为简单组。图\ref{fig:5-difficulty-groups}给出了三类场景的典型结果。误差图由渲染图与GT的逐像素绝对差生成，颜色越亮越红表示误差越大，颜色越暗越蓝表示结果更接近GT。
 
 \begin{figure}[H]
     \centering
@@ -193,7 +193,7 @@
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{cccccccc}
         \toprule
-        难度分组 & 场景数量 & 3DGS PSNR & Ours PSNR & 3DGS SSIM & Ours SSIM & 3DGS LPIPS & Ours LPIPS \\
+        难度分组 & 场景数量 & 3DGS $\mathrm{PSNR}$ & Ours $\mathrm{PSNR}$ & 3DGS $\mathrm{SSIM}$ & Ours $\mathrm{SSIM}$ & 3DGS $\mathrm{LPIPS}$ & Ours $\mathrm{LPIPS}$ \\
         \midrule
         困难组 & 62 & 27.62 & 33.81 & 0.786 & 0.896 & 0.355 & 0.200 \\
         常规组 & 292 & 36.99 & 38.87 & 0.951 & 0.971 & 0.101 & 0.061 \\
@@ -204,7 +204,7 @@
     \end{adjustbox}
 \end{table}
 
-表\ref{tab:5-3}给出了各难度组的指标均值。为进一步比较不同难度组的增益，图\ref{fig:5-difficulty-gains}分别绘制Ours相对3DGS的PSNR提升、SSIM提升和LPIPS下降量，柱长越大表示改进越明显。
+表\ref{tab:5-3}给出了各难度组的指标均值。为进一步比较不同难度组的增益，图\ref{fig:5-difficulty-gains}分别绘制Ours相对3DGS的$\mathrm{PSNR}$提升、$\mathrm{SSIM}$提升和$\mathrm{LPIPS}$下降量，柱长越大表示改进越明显。
 
 \begin{figure}[H]
     \centering
@@ -213,9 +213,9 @@
     \definecolor{easybar}{RGB}{79,145,89}
     \definecolor{allbar}{RGB}{112,112,112}
     \begin{tikzpicture}[x=1cm,y=0.68cm,font=\footnotesize]
-        \node[font=\bfseries] at (1.5,4.55) {$\Delta$PSNR/dB};
-        \node[font=\bfseries] at (5.7,4.55) {$\Delta$SSIM};
-        \node[font=\bfseries] at (9.9,4.55) {$\Delta$LPIPS$\downarrow$};
+        \node[font=\bfseries] at (1.5,4.55) {$\Delta\mathrm{PSNR}/\mathrm{dB}$};
+        \node[font=\bfseries] at (5.7,4.55) {$\Delta\mathrm{SSIM}$};
+        \node[font=\bfseries] at (9.9,4.55) {$\Delta\mathrm{LPIPS}\downarrow$};
         \foreach \y/\name in {3.6/困难组,2.6/常规组,1.6/简单组,0.6/全部场景}{\node[anchor=east] at (-0.12,\y) {\name};}
         \draw[gray] (0,0.12) -- (3,0.12);
         \node[below] at (0,0.12) {0}; \node[below] at (3,0.12) {6};
@@ -257,7 +257,7 @@
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{cccc}
         \toprule
-        Method & SSIM$\uparrow$ & PSNR$\uparrow$ & LPIPS$\downarrow$ \\
+        Method & $\mathrm{SSIM}\uparrow$ & $\mathrm{PSNR}\uparrow$ & $\mathrm{LPIPS}\downarrow$ \\
         \midrule
         Luminance-GS (CVPR’25) & 0.873 & 20.32 & 0.198 \\
         WildGaussians (NeurIPS’24) & 0.768 & 23.38 & 0.282 \\
@@ -266,7 +266,7 @@
     \end{tabular}
     \end{adjustbox}
 \end{table}
-由表\ref{tab:5-5}可知，在三种外观建模方法中，本文方法的SSIM、PSNR和LPIPS均取得最优结果。Luminance-GS的SSIM和LPIPS优于WildGaussians，但PSNR较低；WildGaussians在PSNR上高于Luminance-GS，而结构相似性与感知质量指标仍存在差距。该结果表明，光照扰动条件下的外观建模不仅需要调整整体亮度，还需要同时保持渲染图像中的结构边界和局部纹理稳定性。
+由表\ref{tab:5-5}可知，在三种外观建模方法中，本文方法的$\mathrm{SSIM}$、$\mathrm{PSNR}$和$\mathrm{LPIPS}$均取得最优结果。Luminance-GS的$\mathrm{SSIM}$和$\mathrm{LPIPS}$优于WildGaussians，但$\mathrm{PSNR}$较低；WildGaussians在$\mathrm{PSNR}$上高于Luminance-GS，而结构相似性与感知质量指标仍存在差距。该结果表明，光照扰动条件下的外观建模不仅需要调整整体亮度，还需要同时保持渲染图像中的结构边界和局部纹理稳定性。
 
 定量指标反映了整体重建误差，但不同方法是否在具体场景中出现亮度偏移、颜色失衡或局部纹理异常，还需要结合渲染图像与亮度分布进一步观察。为此，图\ref{fig:5-6}给出三个典型场景的可视化对比，图\ref{fig:5-appearance-luminance}进一步给出相同场景下的亮度分布曲线。
 
@@ -354,7 +354,7 @@
 综合表\ref{tab:5-5}、可视化结果和亮度分布曲线可以看出，在所比较的三种外观建模方法中，本文方法不仅在定量指标上取得更优结果，也在三个场景中表现出更稳定的亮度分布和局部外观保持能力。Luminance-GS在这些场景中更容易出现整体偏亮的趋势，WildGaussians则在部分区域出现边界平滑或结构扰动；本文方法在控制亮度偏移的同时更好地保留了地表纹理与明暗过渡，因此更适合光照扰动条件下的深空场景新视角合成。
 
 \section{消融实验分析}
-消融实验用于分析本文不同模块对新视角合成质量的贡献。实验以3DGS为基线，分别加入有效秩正则、体积正则、RVS、FAME以及FAME与RVS的组合，比较不同配置下的SSIM、PSNR和LPIPS指标变化。其中，RVS表示有效秩正则与体积正则的联合设置，主要用于约束高斯基元的尺度分布和整体体积变化；FAME主要作用于远区域图像重建监督。二者分别从高斯形态稳定性和远区域监督增强两个角度对3DGS进行补充。为展示各组件是否启用对指标的影响，表\ref{tab:5-6}以勾选形式列出了有效秩正则、体积正则和FAME的组合关系及对应的新视角合成质量。
+消融实验用于分析本文不同模块对新视角合成质量的贡献。实验以3DGS为基线，分别加入有效秩正则、体积正则、RVS、FAME以及FAME与RVS的组合，比较不同配置下的$\mathrm{SSIM}$、$\mathrm{PSNR}$和$\mathrm{LPIPS}$指标变化。其中，RVS表示有效秩正则与体积正则的联合设置，主要用于约束高斯基元的尺度分布和整体体积变化；FAME主要作用于远区域图像重建监督。二者分别从高斯形态稳定性和远区域监督增强两个角度对3DGS进行补充。为展示各组件是否启用对指标的影响，表\ref{tab:5-6}以勾选形式列出了有效秩正则、体积正则和FAME的组合关系及对应的新视角合成质量。
 
 \begin{table}[H]
     \fontsize{10.5pt}{13.125pt}\selectfont
@@ -363,7 +363,7 @@
     \begin{adjustbox}{max width=\textwidth}
     \begin{tabular}{cccccc}
         \toprule
-        Effective Rank & Volume Reg. & FAME & SSIM$\uparrow$ & PSNR$\uparrow$ & LPIPS$\downarrow$ \tabularnewline
+        Effective Rank & Volume Reg. & FAME & $\mathrm{SSIM}\uparrow$ & $\mathrm{PSNR}\uparrow$ & $\mathrm{LPIPS}\downarrow$ \tabularnewline
         \midrule
          &  &  & 0.931 & 36.17 & 0.131 \tabularnewline
         \checkmark &  &  & 0.945 & 36.91 & 0.111 \tabularnewline
@@ -388,7 +388,7 @@
     \caption{RVS模块消融可视化结果}\label{fig:5-ablation-rvs}
 \end{figure}
 
-FAME单独使用时也能显著提升PSNR、SSIM和LPIPS，说明远区域监督增强对深空场景新视角合成具有直接贡献。图\ref{fig:5-ablation-fame}进一步展示了FAME模块的消融可视化结果。加入FAME后，远区域和弱纹理区域的细节表达更加清晰，边缘过渡也更加稳定，表明远区域自适应掩膜能够引导模型在训练过程中更充分地关注远距离地形区域。
+FAME单独使用时也能显著提升$\mathrm{PSNR}$、$\mathrm{SSIM}$和$\mathrm{LPIPS}$，说明远区域监督增强对深空场景新视角合成具有直接贡献。图\ref{fig:5-ablation-fame}进一步展示了FAME模块的消融可视化结果。加入FAME后，远区域和弱纹理区域的细节表达更加清晰，边缘过渡也更加稳定，表明远区域自适应掩膜能够引导模型在训练过程中更充分地关注远距离地形区域。
 
 \begin{figure}[H]
     \centering
@@ -398,16 +398,16 @@ FAME单独使用时也能显著提升PSNR、SSIM和LPIPS，说明远区域监督
 
 当FAME与RVS同时启用时，三项指标均达到最优。结合表\ref{tab:5-6}、图\ref{fig:5-ablation-rvs}和图\ref{fig:5-ablation-fame}可以看出，RVS主要从高斯形态稳定性角度改善空间表达，FAME则从远区域图像监督角度增强细节恢复，二者分别作用于3DGS优化中的不同环节，因此能够形成互补并带来最优综合表现。
 
-% 从表\ref{tab:5-6}可以看出，各消融配置均在不同程度上改善了3DGS的新视角合成质量。单独启用Effective Rank时，三项指标提升较为明显；单独启用Volume Reg.时，性能增益相对有限；当二者联合构成RVS后，SSIM、PSNR和LPIPS均进一步改善。单独加入FAME同样能够带来显著收益，而FAME与RVS同时启用时取得全表最优结果，说明远区域监督增强与高斯表示稳定约束均对最终性能具有贡献，且联合使用更有利于获得稳定的综合提升。
+% 从表\ref{tab:5-6}可以看出，各消融配置均在不同程度上改善了3DGS的新视角合成质量。单独启用Effective Rank时，三项指标提升较为明显；单独启用Volume Reg.时，性能增益相对有限；当二者联合构成RVS后，$\mathrm{SSIM}$、$\mathrm{PSNR}$和$\mathrm{LPIPS}$均进一步改善。单独加入FAME同样能够带来显著收益，而FAME与RVS同时启用时取得全表最优结果，说明远区域监督增强与高斯表示稳定约束均对最终性能具有贡献，且联合使用更有利于获得稳定的综合提升。
 
-% 进一步比较两类正则项的单独作用可以发现，Effective Rank带来的增益明显强于Volume Reg.。相较3DGS，单独启用Effective Rank后，PSNR由36.17dB提升至36.91dB，SSIM由0.931提升至0.945，LPIPS由0.131降低至0.111；而单独启用Volume Reg.时，PSNR仅提升至36.30dB，SSIM仍为0.931，LPIPS仅由0.131降低至0.130。由此可见，两项约束在独立使用时对渲染质量的贡献强度并不相同，其中Effective Rank对结构相似性、像素误差和感知质量均表现出更明确的改善。
+% 进一步比较两类正则项的单独作用可以发现，Effective Rank带来的增益明显强于Volume Reg.。相较3DGS，单独启用Effective Rank后，$\mathrm{PSNR}$由36.17dB提升至36.91dB，$\mathrm{SSIM}$由0.931提升至0.945，$\mathrm{LPIPS}$由0.131降低至0.111；而单独启用Volume Reg.时，$\mathrm{PSNR}$仅提升至36.30dB，$\mathrm{SSIM}$仍为0.931，$\mathrm{LPIPS}$仅由0.131降低至0.130。由此可见，两项约束在独立使用时对渲染质量的贡献强度并不相同，其中Effective Rank对结构相似性、像素误差和感知质量均表现出更明确的改善。
 
-% 当Effective Rank与Volume Reg.同时启用并形成RVS后，PSNR、SSIM和LPIPS分别达到37.64dB、0.954和0.093，均优于二者单独启用的结果。与仅使用Effective Rank相比，RVS使PSNR继续提高0.73dB，SSIM提高0.009，LPIPS降低0.018，说明两类约束协同后能够带来更稳定的综合收益。
+% 当Effective Rank与Volume Reg.同时启用并形成RVS后，$\mathrm{PSNR}$、$\mathrm{SSIM}$和$\mathrm{LPIPS}$分别达到37.64dB、0.954和0.093，均优于二者单独启用的结果。与仅使用Effective Rank相比，RVS使$\mathrm{PSNR}$继续提高0.73dB，$\mathrm{SSIM}$提高0.009，$\mathrm{LPIPS}$降低0.018，说明两类约束协同后能够带来更稳定的综合收益。
 
-% FAME与RVS的单独结果体现出不同侧重点：FAME单独使用时PSNR达到37.69dB，略高于RVS的37.64dB；RVS单独使用时SSIM为0.954、LPIPS为0.093，优于FAME对应的0.945和0.104。在二者联合启用后，三项指标进一步达到38.49dB、0.961和0.078；相较单独使用FAME，PSNR提高0.80dB、SSIM提高0.016、LPIPS降低0.026；相较单独使用RVS，PSNR提高0.85dB、SSIM提高0.007、LPIPS降低0.015。该结果表明，远区域监督增强与高斯表示稳定约束在像素误差、结构相似性和感知质量上具有互补作用。
+% FAME与RVS的单独结果体现出不同侧重点：FAME单独使用时$\mathrm{PSNR}$达到37.69dB，略高于RVS的37.64dB；RVS单独使用时$\mathrm{SSIM}$为0.954、$\mathrm{LPIPS}$为0.093，优于FAME对应的0.945和0.104。在二者联合启用后，三项指标进一步达到38.49dB、0.961和0.078；相较单独使用FAME，$\mathrm{PSNR}$提高0.80dB、$\mathrm{SSIM}$提高0.016、$\mathrm{LPIPS}$降低0.026；相较单独使用RVS，$\mathrm{PSNR}$提高0.85dB、$\mathrm{SSIM}$提高0.007、$\mathrm{LPIPS}$降低0.015。该结果表明，远区域监督增强与高斯表示稳定约束在像素误差、结构相似性和感知质量上具有互补作用。
 
 % 综上，整体消融结果表明，FAME和RVS分别从远区域监督增强与高斯空间表示稳定两个层面补充3DGS，二者结合后在像素误差、结构相似性和感知质量三个方面均取得最优结果。
 \section{本章小结}
 本章围绕深空场景的新视角合成任务对本文方法进行了实验验证。首先介绍实验数据、环境配置和默认超参数设置；随后从三维场景表示、新视角合成质量、光照扰动鲁棒性和模块消融四个方面进行分析。
 
-实验结果表明，本文方法在PSNR、SSIM和LPIPS上优于3DGS及其他对比方法，并在点云覆盖、重投影深度一致性和光照扰动条件下表现出更稳定的结果。消融实验进一步说明，FAME与RVS分别从远区域监督增强和高斯形态稳定两个方面发挥作用，二者结合能够获得最佳综合性能。
+实验结果表明，本文方法在$\mathrm{PSNR}$、$\mathrm{SSIM}$和$\mathrm{LPIPS}$上优于3DGS及其他对比方法，并在点云覆盖、重投影深度一致性和光照扰动条件下表现出更稳定的结果。消融实验进一步说明，FAME与RVS分别从远区域监督增强和高斯形态稳定两个方面发挥作用，二者结合能够获得最佳综合性能。
