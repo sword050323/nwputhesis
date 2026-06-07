@@ -228,11 +228,11 @@
             }
             \map[overwrite]{
                 \pertype{conference}
-                \step[fieldset=usera, fieldvalue={A}]
+                \step[fieldset=usera, fieldvalue={C}]
             }
             \map[overwrite]{
                 \pertype{inproceedings}
-                \step[fieldset=usera, fieldvalue={A}]
+                \step[fieldset=usera, fieldvalue={C}]
             }
         }
     }
@@ -267,14 +267,11 @@
                 \printfield[booktitlecase]{booktitle}%
                 \iffieldundef{booksubtitle}{}{\setunit{\subtitlepunct}\printfield[booktitlecase]{booksubtitle}}%
                 \usebibmacro{nwpu:bachelorconfvolume}%
-                \printtext{[C]}%
             }}%
     }
     \newbibmacro*{nwpu:bachelorin}{%
-        \setunit{\nwpudot}%
-        \iffieldequalstr{userd}{chinese}
-            {\printtext{见：}}
-            {\printtext{In\addcolon\space}}%
+        \setunit{}%
+        \printtext{//}%
     }
     \DeclareBibliographyDriver{nwpubachelorconf}{%
         \usebibmacro{bibindex}%

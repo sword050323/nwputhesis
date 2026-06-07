@@ -3,32 +3,49 @@
 \chapter{深空场景三维重建与新视角合成问题分析}
 \chaptermark{深空场景三维重建与新视角合成问题分析}
 
+深空场景中的大深度跨度、弱纹理地表和光照变化会改变优化过程的监督分布，使常规三维重建与新视角合成方法在远区域细节、空间支撑和颜色一致性上更易退化。
+
+基于上述特点，本章先从深度、纹理和光照三个方面分析深空场景的数据差异，再结合3DGS的光度优化与显式高斯表示机制，归纳出远区域监督不足、高斯形态退化和跨视角光度优化偏差三类问题。
+
 \section{深空场景数据特征与方法适用性观察}
 
-本节从数据层面分析深空场景相对于常规地面场景的主要差异，并重点关注深度跨度、纹理梯度分布和跨视角光照不一致三个会直接影响3DGS优化过程的因素。
+本节从数据层面分析深空场景相对于常规地面场景的主要差异。
 
 图\ref{fig:3-1}给出地面场景与深空场景图像内容及相对深度分布的一个典型示例。在该示例中，地面场景的深度变化相对集中，深空场景则同时包含近处岩石、坡面结构和远处背景区域，远近跨度更明显。
 
 \begin{figure}[H]
     \centering
-    \begin{subfigure}[b]{0.48\linewidth}
+    \captionsetup[subfigure]{skip=2pt}
+
+    \begin{subfigure}[b]{0.39\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{fig3_1a_regular_scene_panel.png}
         \caption{地面场景图像}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\linewidth}
+    \end{subfigure}
+    \hspace{0.015\linewidth}
+    \begin{subfigure}[b]{0.39\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{fig3_1b_regular_depth_pseudo_panel.png}
         \caption{地面场景相对深度}
     \end{subfigure}
-    \par\medskip
-    \begin{subfigure}[b]{0.48\linewidth}
+
+    \vspace{0.05\baselineskip}
+
+    \begin{subfigure}[b]{0.39\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{fig3_1c_deepspace_scene_panel.png}
         \caption{深空场景图像}
-    \end{subfigure}\hfill
-    \begin{subfigure}[b]{0.48\linewidth}
+    \end{subfigure}
+    \hspace{0.015\linewidth}
+    \begin{subfigure}[b]{0.39\linewidth}
+        \centering
         \includegraphics[width=\linewidth]{fig3_1d_deepspace_depth_pseudo_panel.png}
         \caption{深空场景相对深度}
     \end{subfigure}
-    \caption{地面场景与深空场景的图像及相对深度分布对比。地面场景图像来源于Unsplash，深空场景图像来源于NASA/JPL-Caltech/ASU/MSSS。}\label{fig:3-1}
+
+    \vspace{-0.2\baselineskip}
+    \caption{地面场景与深空场景的图像及相对深度分布对比。地面场景图像来源于Unsplash，深空场景图像来源于NASA/JPL-Caltech/ASU/MSSS。}
+    \label{fig:3-1}
 \end{figure}
 
 该示例反映出的深度跨度差异首先影响不同区域在图像空间中的可观测性。远处结构通常对应更小像素尺度和更弱视差信息，即使它在三维空间中占据较大范围，也可能在图像监督中处于不利位置。因此，远区域不能只被视为背景，而是影响场景完整表达的重要组成部分。
@@ -57,7 +74,7 @@
 
 图\ref{fig:3-2}显示，在该示例中强梯度响应主要集中于岩石边缘和局部结构位置，而大面积砂面与远处低对比区域的纹理变化较缓，能够提供的局部变化信息有限。由于这些区域的颜色与纹理差异不明显，基于全图光度误差的优化在局部几何和高斯形态上更容易缺少细粒度约束。
 
-第三个差异来自跨视角光照变化。图\ref{fig:3-3}对比同一深空场景在不同太阳直射角条件下的图像和亮度分布，用于观察几何结构相近时光度外观仍可能发生的变化。
+第三个差异来自跨视角光照变化。图\ref{fig:3-3}对比了同一深空场景在不同太阳直射角条件下的图像和亮度分布。
 
 \begin{figure}[H]
     \centering
